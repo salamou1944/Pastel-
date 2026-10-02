@@ -4,55 +4,63 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#17110d">
-<meta name="description" content="PASTEL PASTRY&COFFEE — QR Concierge">
-<title>PASTEL — Your sweet spot in Oran</title>
+<meta name="description" content="PASTEL PASTRY&COFFEE — PASTEL Host">
+<title>PASTEL — Host</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="grain"></div>
 <main class="app-shell">
-  <header class="hero">
-    <div class="hero-top">
+  <section class="host-stage">
+    <header class="host-nav">
       <div class="wordmark"><span class="mark">P</span><span>PASTEL</span></div>
-      <span class="status"><i></i> ORAN · AKID LOTFI</span>
-    </div>
-    <div class="hero-grid">
-      <div class="hero-copy">
-        <p class="eyebrow">PASTRY · COFFEE · MOMENTS</p>
-        <h1>لحظتك الحلوة<br><em>تبدأ من هنا.</em></h1>
-        <p class="hero-text">اكتشف PASTEL، اسأل مباشرة، وخذ طريقك إلى المعلومة التي تحتاجها — ببساطة.</p>
-        <div class="hero-actions">
-          <a class="primary" href="#concierge">اسأل PASTEL HOST <span>↘</span></a>
-          <a class="ghost" href="https://www.google.com/maps/search/?api=1&query=Résidence%20El%20Chourouk%2C%20Akid%20Lotfi%2C%20Oran%2031000%2C%20Algeria" target="_blank" rel="noopener">الموقع <span>↗</span></a>
-        </div>
-      </div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="halo"></div><div class="ring ring-a"></div><div class="ring ring-b"></div>
-        <div class="pastry">
-          <div class="pastry-inner"></div><span></span><span></span><span></span>
-        </div>
-        <div class="floating-card"><small>PASTEL HOST</small><strong>Bonjour.</strong><b>كيف أساعدك؟</b></div>
-      </div>
-    </div>
-    <div class="hero-bottom">
-      <span>French pastry</span><span>Specialty coffee</span><span>Signature drinks</span>
-    </div>
-  </header>
+      <span class="host-location">ORAN · AKID LOTFI</span>
+    </header>
 
-  <section class="intro-strip">
-    <div><span class="number">01</span><b>اكتشف</b><small>الحلويات والمشروبات</small></div>
-    <div><span class="number">02</span><b>اسأل</b><small>المعلومات المعتمدة</small></div>
-    <div><span class="number">03</span><b>تواصل</b><small>WhatsApp · Call · Email</small></div>
+    <div class="host-intro">
+      <div class="host-copy">
+        <p class="eyebrow">YOUR PASTEL HOST</p>
+        <h1>أهلاً بك في <em>PASTEL.</em></h1>
+        <p>أنا مضيفك في PASTEL. اسألني عن الحلويات، المشروبات، الخدمات، الموقع أو طريقة التواصل — وسأجيبك من المعلومات المعتمدة لدينا.</p>
+      </div>
+
+      <div class="host-portrait" aria-label="PASTEL Host">
+        <div class="portrait-glow"></div>
+        <div class="portrait">
+          <div class="hair"></div>
+          <div class="ear left"></div><div class="ear right"></div>
+          <div class="face">
+            <div class="brow b1"></div><div class="brow b2"></div>
+            <div class="eye e1"></div><div class="eye e2"></div>
+            <div class="nose"></div><div class="mouth"></div>
+            <div class="beard"></div>
+          </div>
+          <div class="neck"></div>
+          <div class="shirt"></div>
+          <div class="jacket left-j"></div><div class="jacket right-j"></div>
+          <div class="tie"></div>
+          <div class="lapel l1"></div><div class="lapel l2"></div>
+        </div>
+        <div class="host-badge"><i></i><span>PASTEL HOST</span><b>معك الآن</b></div>
+      </div>
+    </div>
+
+    <div class="host-prompt">
+      <span>Bonjour.</span>
+      <strong>كيف يمكنني مساعدتك اليوم؟</strong>
+      <button id="speakWelcome" aria-label="تشغيل الترحيب">◖ استمع</button>
+    </div>
   </section>
 
   <section class="concierge" id="concierge">
     <div class="section-head">
       <div>
-        <p class="eyebrow">YOUR DIGITAL HOST</p>
-        <h2>ماذا تشتهي اليوم؟</h2>
+        <p class="eyebrow">ASK YOUR HOST</p>
+        <h2>تحدث مع PASTEL</h2>
       </div>
-      <button class="sound-btn" id="speakWelcome" aria-label="تشغيل الترحيب">◖ صوت</button>
+      <span class="verified">● معلومات موثقة</span>
     </div>
+
     <div class="quick-pills">
       <button data-q="ما الذي تقدمونه؟">ماذا تقدمون؟</button>
       <button data-q="ما الحلويات الموجودة؟">الحلويات</button>
@@ -61,26 +69,36 @@
       <button data-q="أين يقع باستيل؟">الموقع</button>
       <button data-q="كيف أتواصل مع باستيل؟">التواصل</button>
     </div>
+
     <div class="chat-window">
-      <div class="host-line"><div class="mini-mark">P</div><div><b>PASTEL HOST</b><span>verified local knowledge</span></div><i></i></div>
-      <div id="messages" class="messages"><div class="msg bot"><b>Bonjour.</b><p>أهلاً بك في PASTEL. اسألني عن القائمة، المشروبات، الموقع أو طريقة التواصل.</p></div></div>
-      <div class="voice-row"><button id="voiceButton">🎙 تحدث معي</button><span id="voiceStatus">الصوت متاح إذا كان مدعومًا في متصفحك.</span></div>
+      <div class="host-line">
+        <div class="mini-avatar"><span></span></div>
+        <div><b>PASTEL HOST</b><span>مضيف PASTEL الافتراضي</span></div>
+        <i></i>
+      </div>
+      <div id="messages" class="messages">
+        <div class="msg bot"><b>Bonjour.</b><p>أهلاً بك. اسألني ما تريد معرفته عن PASTEL، وسأجيبك من المعلومات الموثقة لدي.</p></div>
+      </div>
+      <div class="voice-row">
+        <button id="voiceButton">🎙 تحدث معي</button>
+        <span id="voiceStatus">يمكنك التحدث معي إذا كان المتصفح يدعم الميكروفون.</span>
+      </div>
       <form id="chatForm" class="chat-form">
-        <input id="questionInput" autocomplete="off" placeholder="اكتب سؤالك هنا…" aria-label="سؤالك">
+        <input id="questionInput" autocomplete="off" placeholder="اكتب سؤالك إلى موظف PASTEL…" aria-label="سؤالك">
         <button aria-label="إرسال">↗</button>
       </form>
     </div>
   </section>
 
-  <section class="experience">
-    <div class="experience-copy">
-      <p class="eyebrow">THE PASTEL EXPERIENCE</p>
-      <h2>صُنعت للحظات<br><em>التي تستحق التوقف.</em></h2>
-      <p>حلويات فرنسية، قهوة، مشروبات مميزة وأجواء تستحق الزيارة في Akid Lotfi.</p>
+  <section class="knowledge">
+    <div>
+      <p class="eyebrow">WHAT I KNOW</p>
+      <h2>معلومات PASTEL<br><em>في متناولك.</em></h2>
     </div>
-    <div class="menu-orbit">
-      <span>MACARONS</span><span>COFFEE</span><span>TARTES</span><span>SMOOTHIES</span><span>VIENNOISERIES</span>
-      <div class="orbit-center">P</div>
+    <div class="knowledge-list">
+      <span>PASTRIES</span><span>VIENNOISERIES</span><span>COFFEE</span>
+      <span>SMOOTHIES</span><span>MACARONS</span><span>TARTES</span>
+      <span>BRUNCH</span><span>SIGNATURE DRINKS</span>
     </div>
   </section>
 
@@ -91,7 +109,7 @@
     <a href="https://www.google.com/maps/search/?api=1&query=Résidence%20El%20Chourouk%2C%20Akid%20Lotfi%2C%20Oran%2031000%2C%20Algeria" target="_blank" rel="noopener" class="contact-card"><span class="contact-icon">⌖</span><div><small>VISIT</small><h3>Akid Lotfi · Oran</h3><p>Résidence El Chourouk · PCF8+P4V</p></div><b>↗</b></a>
   </section>
 
-  <footer><span>PASTEL PASTRY&COFFEE</span><span>Verified local knowledge · No invented prices or hours</span></footer>
+  <footer><span>PASTEL PASTRY&COFFEE</span><span>Verified local knowledge · لا أسعار مخترعة</span></footer>
 </main>
 <script src="app.js"></script>
 </body>
