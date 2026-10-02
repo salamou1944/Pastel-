@@ -12,3 +12,6 @@ The intended public target is GitHub Pages at https://salamou1944.github.io/Past
 Do not replace the existing QR destination until the new public URL is live and has been tested on a real phone.
 
 Deployment workflow updated to initialize Pages automatically.
+
+
+Pages verification trigger: 2026-10-03
