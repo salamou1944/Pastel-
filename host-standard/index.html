@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PASTEL Host — Standard</title>
+<script type="module" src="https://unpkg.com/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#120f0d;color:#fff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 10%,#4a3528 0,#1a1410 38%,#0c0a09 100%)}
+main{width:min(1100px,100%);margin:auto;padding:24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,420px);gap:22px;min-height:100vh;align-items:center}
+.stage{height:min(760px,calc(100vh - 48px));min-height:560px;border:1px solid rgba(255,255,255,.12);border-radius:28px;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.22));position:relative}
+model-viewer{width:100%;height:100%;--poster-color:transparent}
+.loading{position:absolute;bottom:18px;right:18px;left:18px;padding:11px 15px;border-radius:999px;background:#0b0908cc;backdrop-filter:blur(12px);font-size:14px}
+.ready{opacity:0;pointer-events:none}
+.panel{padding:28px;border:1px solid rgba(255,255,255,.12);border-radius:28px;background:#17120fd9;backdrop-filter:blur(16px)}
+.brand{letter-spacing:.16em;font-weight:800;color:#e8c99f}.panel h1{font-size:clamp(32px,5vw,58px);margin:10px 0}.panel p{color:#cfc3b8;line-height:1.8}
+button{border:0;border-radius:14px;padding:14px 18px;background:#e8c99f;color:#19120d;font-weight:800;cursor:pointer;margin:6px 4px 0 0}
+#answer{margin-top:18px;padding:16px;border-radius:16px;background:#0c0a09;color:#eee;min-height:70px}
+@media(max-width:800px){main{grid-template-columns:1fr;padding:12px}.stage{height:62vh;min-height:430px}.panel{padding:20px}}
+</style>
+</head>
+<body>
+<main>
+<section class="stage">
+<model-viewer id="host" src="https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus%20Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png" alt="PASTEL 3D Host" camera-controls camera-orbit="0deg 0deg 72%" field-of-view="24deg" shadow-intensity=".45" exposure="1.05" interaction-prompt="none" loading="eager"></model-viewer>
+<div id="loading" class="loading">جاري تجهيز المضيف ثلاثي الأبعاد…</div>
+</section>
+<section class="panel">
+<div class="brand">PASTEL PASTRY&COFFEE</div>
+<h1>مرحباً، أنا مضيف PASTEL.</h1>
+<p>نسخة Host قياسية مستقلة. يجيب فقط من المعلومات المثبتة عن PASTEL، ويستخدم صوت المتصفح عند الطلب.</p>
+<button onclick="answer('الخدمات')">الخدمات</button>
+<button onclick="answer('الحلويات')">الحلويات</button>
+<button onclick="answer('المشروبات')">المشروبات</button>
+<button onclick="answer('الموقع')">الموقع</button>
+<button onclick="speakLast()">استمع للإجابة</button>
+<div id="answer">اختر سؤالاً لأختبر الحوار.</div>
+</section>
+</main>
+<script>
+const answers={
+"الخدمات":"PASTEL يقدم الفطور والغداء والعشاء والبرانش والمشروبات.",
+"الحلويات":"لدينا pâtisseries وviennoiseries وmillefeuille وalmond croissant وpistachio trompe-l’œil وblondie وmacarons والتارت والحلويات الفردية والكيك.",
+"المشروبات":"لدينا القهوة والشاي المنزلي والـsmoothies والمشروبات المميزة.",
+"الموقع":"نحن في Résidence El Chourouk، Akid Lotfi، Oran 31000، Algeria.",
+};
+let last="";
+function answer(k){last=answers[k]||"هذه المعلومة غير مثبتة حالياً.";document.querySelector("#answer").textContent=last;speak(last)}
+function speak(t){if(!("speechSynthesis" in window))return; speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="ar-DZ";u.rate=.88;u.pitch=1;speechSynthesis.speak(u)}
+function speakLast(){if(last)speak(last)}
+const m=document.querySelector("#host"),l=document.querySelector("#loading");
+m.addEventListener("load",()=>l.classList.add("ready"),{once:true});
+m.addEventListener("error",()=>l.textContent="تعذر تحميل نموذج المضيف.");
+</script>
+</body>
+</html>
