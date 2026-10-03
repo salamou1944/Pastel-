@@ -5,17 +5,12 @@
 "talkinghead":"https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs"
 }}
 </script>
+<script src="./config.js"></script>
 <script type="module">
 import { TalkingHead } from "talkinghead";
 
-const K=[
-["الخدمات","PASTEL يقدم الفطور والغداء والعشاء والبرانش والمشروبات."],
-["الحلويات","لدينا pâtisseries وviennoiseries وmillefeuille وalmond croissant وpistachio trompe-l’œil وblondie وmacarons والتارت والكيك."],
-["المشروبات","لدينا القهوة والشاي والـsmoothies والمشروبات المميزة."],
-["الموقع","العنوان هو Résidence El Chourouk، Akid Lotfi، Oran 31000، Algeria. والـPlus Code هو PCF8+P4V."],
-["التواصل","يمكنك التواصل مع PASTEL عبر WhatsApp أو الهاتف أو البريد الإلكتروني."],
-["الأسعار","الأسعار الكاملة غير مثبتة في قاعدة المعرفة الحالية، لذلك لن أخمّنها."]
-];
+const C=window.PASTEL_PREMIUM||{};
+const K=(C.knowledge||[]).map(x=>[x.label,x.answer,x.keys||[]]);
 const q=document.getElementById("questions"),a=document.getElementById("answer"),s=document.getElementById("status"),input=document.getElementById("input"),send=document.getElementById("send"),avatar=document.getElementById("avatar");
 let head=null, voice=null, speaking=false, mouthTimer=null, gestureTimer=null;
 
@@ -40,6 +35,10 @@ function animateSpeech(on, intensity=1){
 }
 
 function speak(text){
+ if(!("speechSynthesis" in window)){
+   s.textContent="الصوت غير متاح في هذا المتصفح";
+   return;
+ }
  speechSynthesis.cancel();
  const parts=String(text).replace(/\s+/g," ").trim().split(/(?<=[.!؟،؛:])\s+/).filter(Boolean);
  let index=0;
@@ -47,8 +46,8 @@ function speak(text){
    if(index>=parts.length){animateSpeech(false);return}
    const chunk=parts[index++];
    const u=new SpeechSynthesisUtterance(chunk);
-   u.lang=voice?.lang||"ar-DZ"; u.voice=voice||null;
-   u.rate=/[.!؟]$/.test(chunk)?1.24:1.30; u.pitch=1; u.volume=1;
+   u.lang=voice?.lang||C.speech?.lang||"ar-DZ"; u.voice=voice||null;
+   u.rate=/[.!؟]$/.test(chunk)?1.24:(C.speech?.rate||1.30); u.pitch=C.speech?.pitch||1; u.volume=1;
    u.onstart=()=>{animateSpeech(true,.9);head?.makeEyeContact(900)};
    u.onboundary=(e)=>{
      const ch=chunk.slice(e.charIndex||0,(e.charIndex||0)+14);
@@ -67,6 +66,7 @@ function speak(text){
 
 function respond(text){
  a.textContent=text;
+ if(C.extensions?.capabilities?.contactActions) renderContactActions();
  head?.lookAtCamera(700);
  head?.setMood("happy");
  if(gestureTimer)clearTimeout(gestureTimer);
@@ -91,14 +91,30 @@ K.forEach(([label,text])=>{
 
 function answerQuestion(raw){
  const t=raw.trim().toLowerCase(); if(!t)return;
- const hit=t.includes("سعر")||t.includes("اسعار")||t.includes("الأسعار")?K[5]:
- t.includes("موقع")||t.includes("عنوان")||t.includes("وين")||t.includes("أين")?K[3]:
- t.includes("تواصل")||t.includes("واتساب")||t.includes("هاتف")||t.includes("رقم")||t.includes("بريد")?K[4]:
- t.includes("مشروب")||t.includes("قهوة")||t.includes("شاي")||t.includes("سموث")?K[2]:
- t.includes("حلويات")||t.includes("حلو")||t.includes("كيك")||t.includes("كرواسون")||t.includes("مكارون")?K[1]:
- t.includes("فطور")||t.includes("غداء")||t.includes("عشاء")||t.includes("برانش")||t.includes("خدمات")?K[0]:null;
+ if(!("speechSynthesis" in window)) s.textContent="الصوت غير متاح في هذا المتصفح؛ ستظل الإجابات النصية متاحة.";
+ const hit=K.find(item=>(item[2]||[]).some(key=>t.includes(String(key).toLowerCase())))||null;
  respond(hit?hit[1]:"يمكنني مساعدتك بالمعلومات المثبتة عن خدمات PASTEL وحلوياته ومشروباته وموقعه وطرق التواصل. إذا كنت تسأل عن الأسعار، فهي غير مثبتة حالياً ولن أخمّنها.");
 }
+function renderContactActions(){
+ let box=document.getElementById("contact-actions");
+ if(!box){
+   box=document.createElement("div"); box.id="contact-actions"; box.className="actions";
+   a.insertAdjacentElement("afterend",box);
+ }
+ if(box.dataset.ready==="1") return;
+ box.innerHTML="";
+ const items=[
+  ["WhatsApp","https://wa.me/"+String(C.contact?.whatsapp||"").replace(/[^0-9]/g,"")],
+  ["اتصال","tel:"+String(C.contact?.phone||"")],
+  ["البريد","mailto:"+String(C.contact?.email||"")],
+  ["الاتجاهات","https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(C.contact?.address||"")]
+ ];
+ items.forEach(([label,href])=>{
+  const el=document.createElement("a"); el.className="action"; el.textContent=label; el.href=href; el.target=href.startsWith("http")?"_blank":"_self"; el.rel="noopener"; el.style.textDecoration="none"; el.style.display="block"; box.appendChild(el);
+ });
+ box.dataset.ready="1";
+}
+
 send.onclick=()=>answerQuestion(input.value);
 input.addEventListener("keydown",e=>{if(e.key==="Enter")answerQuestion(input.value)});
 
