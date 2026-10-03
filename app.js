@@ -24,7 +24,7 @@ async function initPastel3DHost(){
       cameraView:"upper",
       avatarSpeakingHeadMove:0.35,
       avatarListeningEyeContact:0.65,
-      lipsyncModules:["en","fi","lt"]
+      lipsyncModules:["fr","en","fi","lt"]
     });
     await pastelHead.showAvatar({
       url: AVATAR_URL,
@@ -32,6 +32,7 @@ async function initPastel3DHost(){
       avatarMood:"neutral"
     });
     pastelHead.setView("upper",{cameraDistance:0.72,cameraY:0.02});
+    try{ pastelHead.setMood("neutral"); }catch{}
     pastelHead.start();
     loading?.classList.add("ready");
   }catch(error){
