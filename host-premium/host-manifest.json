@@ -1,16 +1,20 @@
 {
   "product": "PASTEL HOST",
   "version": "premium-3d",
-  "runtime": "TalkingHead",
+  "runtime": "Google model-viewer",
   "avatar": "../assets/mpfb.glb",
   "language": "ar-DZ",
   "features": [
-    "3d-avatar",
-    "facial-animation",
-    "voice",
+    "real-glb-3d-avatar",
+    "camera-framing",
+    "browser-arabic-speech",
     "knowledge-answers",
     "contact-actions",
     "responsive-mobile"
   ],
-  "status": "runtime-ready"
+  "limitations": [
+    "facial-lip-sync is not certified in the current browser runtime",
+    "live browser visual verification is still required for production certification"
+  ],
+  "status": "deployed-source-ready"
 }
