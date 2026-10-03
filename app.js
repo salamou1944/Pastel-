@@ -12,14 +12,14 @@ const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition
 /* PASTEL 3D HOST — TalkingHead */
 let pastelHead = null;
 let pastelVoices = [];
-const AVATAR_URL = "https://readyplayerme.github.io/visage/male.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png";
+const AVATAR_URL = "https://readyplayerme.github.io/visage/male.glb";
 
 async function initPastel3DHost(){
   const node = document.querySelector("#avatar3d");
   const loading = document.querySelector("#avatarLoading");
   if(!node) return;
   try{
-    const { TalkingHead } = await import("https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs");
+    const { TalkingHead } = await import("https://esm.sh/@met4citizen/talkinghead@1.7.0?bundle");
     pastelHead = new TalkingHead(node,{
       cameraView:"upper",
       avatarSpeakingHeadMove:0.35,
