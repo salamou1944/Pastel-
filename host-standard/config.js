@@ -47,31 +47,37 @@ window.HOST_CONFIG = {
     {
       id: "services",
       label: "الخدمات",
+      keywords: ["خدمات","فطور","غداء","عشاء","برانش"],
       answer: "PASTEL يقدم الفطور والغداء والعشاء والبرانش والمشروبات."
     },
     {
       id: "desserts",
       label: "الحلويات",
+      keywords: ["حلويات","حلوى","باتيسري","patisserie","viennoiserie"],
       answer: "لدينا pâtisseries وviennoiseries وmillefeuille وalmond croissant وpistachio trompe-l’œil وblondie وmacarons والتارت والحلويات الفردية والكيك."
     },
     {
       id: "drinks",
       label: "المشروبات",
+      keywords: ["مشروبات","قهوة","شاي","سموثي","smoothies"],
       answer: "لدينا القهوة والشاي المنزلي والـsmoothies والمشروبات المميزة."
     },
     {
       id: "location",
       label: "الموقع",
+      keywords: ["عنوان","أين","فين","موقع","location"],
       answer: "العنوان: Résidence El Chourouk، Akid Lotfi، Oran 31000، Algeria. والـPlus Code هو PCF8+P4V."
     },
     {
       id: "contact",
       label: "التواصل",
+      keywords: ["تواصل","هاتف","واتساب","whatsapp","contact"],
       answer: "يمكنك التواصل مع PASTEL عبر WhatsApp أو الهاتف أو البريد الإلكتروني."
     },
     {
       id: "prices",
       label: "الأسعار",
+      keywords: ["سعر","أسعار","ثمن","prix","price"],
       answer: "الأسعار الكاملة غير مثبتة في قاعدة المعرفة الحالية، لذلك لن أخمّنها."
     }
   ],
