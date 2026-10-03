@@ -1,17 +1,17 @@
 # PASTEL Host Premium
 
-Premium presentation layer built on the existing Host Standard runtime.
+Premium presentation layer for PASTEL PASTRY&COFFEE.
 
-## Real capabilities
-- Real GLB 3D avatar using the existing Pages asset.
-- TalkingHead runtime with a Three.js compatibility renderer.
-- Premium PASTEL visual treatment and responsive mobile layout.
-- Verified knowledge cards and contact actions.
-- Browser Arabic speech fallback with explicit limitation: the current TalkingHead built-in lip-sync modules do not provide Arabic visemes.
+## Current implementation
+- Real human GLB avatar (assets/mpfb.glb) packaged by the Pages workflow.
+- Google model-viewer runtime with explicit camera framing.
+- Arabic browser speech with verified knowledge answers.
+- Responsive premium PASTEL visual treatment.
+- Direct WhatsApp, phone, email and map actions.
 - No invented prices or customer facts.
 
-## URL
-GitHub Pages path: /Pastel-/host-premium/
-
 ## Evidence boundary
-The source is committed and deployable. A browser-production pass is still required to certify the live rendered result; source correctness alone is not presented as browser proof.
+GitHub Pages deployment is verified by GitHub Actions. A browser-production pass is still required to certify the live rendered result; source correctness and a successful deployment are not presented as visual browser proof.
+
+## Remaining premium gap
+True facial lip-sync for Arabic speech is not certified in the current runtime. It requires a runtime with compatible facial/morph-target control or a speech/viseme pipeline.
