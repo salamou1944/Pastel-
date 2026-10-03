@@ -48,19 +48,53 @@ if("speechSynthesis" in window){
   loadPastelVoices();
   speechSynthesis.addEventListener("voiceschanged",loadPastelVoices);
 }
+function animateArabicMouth(active){
+  if(!pastelHead) return;
+  if(!active){
+    try{pastelHead.setFixedValue("jawOpen",null);pastelHead.setFixedValue("mouthOpen",null)}catch{}
+    return;
+  }
+  const started=performance.now();
+  const loop=(now)=>{
+    if(!window.__pastelSpeaking) return;
+    const t=(now-started)/1000;
+    // Natural-looking speech cadence for Arabic Web Speech while preserving the 3D facial rig.
+    const pulse=Math.max(0,Math.sin(t*17.5)+0.35*Math.sin(t*31.7))*0.32;
+    const jaw=0.05+pulse;
+    try{
+      pastelHead.setFixedValue("jawOpen",jaw);
+      pastelHead.setFixedValue("mouthOpen",Math.min(0.42,jaw*0.85));
+      pastelHead.setFixedValue("mouthSmileLeft",0.08+0.03*Math.sin(t*2.1));
+      pastelHead.setFixedValue("mouthSmileRight",0.08+0.03*Math.sin(t*2.1));
+    }catch{}
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
 function speakPastel(text){
   if(!("speechSynthesis" in window)) return;
   speechSynthesis.cancel();
+  window.__pastelSpeaking=false;
+  animateArabicMouth(false);
   const u=new SpeechSynthesisUtterance(text);
   const ar=pastelVoices.filter(v=>/^ar/i.test(v.lang));
   const dz=ar.find(v=>/DZ/i.test(v.lang));
   const maleHint=ar.find(v=>/male|man|mohamed|ahmed|omar|youssef/i.test(v.name));
   u.voice=dz||maleHint||ar[0]||pastelVoices.find(v=>/^fr/i.test(v.lang))||null;
   u.lang=(u.voice&&u.voice.lang)||"ar-DZ";
-  u.rate=0.92;
-  u.pitch=0.88;
+  u.rate=0.91;
+  u.pitch=0.84;
   u.volume=1;
-  u.onstart=()=>{try{pastelHead?.playGesture("handup",1.4,false,500)}catch{}};
+  u.onstart=()=>{
+    window.__pastelSpeaking=true;
+    animateArabicMouth(true);
+    try{pastelHead?.setMood("happy");pastelHead?.playGesture("handup",1.4,false,500)}catch{}
+  };
+  u.onend=u.onerror=()=>{
+    window.__pastelSpeaking=false;
+    animateArabicMouth(false);
+    try{pastelHead?.setMood("neutral")}catch{}
+  };
   speechSynthesis.speak(u);
 }
 window.speakPastel=speakPastel;
