@@ -59,10 +59,10 @@ button{font:inherit;border:1px solid rgba(255,255,255,.10);background:rgba(255,2
 <button id="stop">إيقاف الصوت</button>
 </div>
 <div class="contact-actions">
-<a id="wa" target="_blank" rel="noopener">WhatsApp</a>
-<a id="call">اتصال</a>
-<a id="email">البريد</a>
-<a id="maps" target="_blank" rel="noopener">الاتجاهات</a>
+<a id="wa" target="_blank" rel="noopener"></a>
+<a id="call"></a>
+<a id="email"></a>
+<a id="maps" target="_blank" rel="noopener"></a>
 </div>
 <div id="mic" class="mic">
 <button id="listen">🎙️ اسألني بصوتك</button>
@@ -86,6 +86,7 @@ $("subtitle").textContent=C.brand.subtitle;
 const answer=$("answer"), status=$("status");
 let last="";
 const questionMap=new Map(C.questions.map(q=>[q.id,q]));
+const normalize=s=>String(s||"").toLowerCase().normalize("NFKC").replace(/[ًٌٍَُِّْـ]/g,"").replace(/ي/g,"ى").replace(/أ|إ|آ/g,"ا").trim();
 
 C.questions.forEach(q=>{
   const b=document.createElement("button");
@@ -113,7 +114,11 @@ function speakFallback(text){
 $("speak").onclick=()=>last&&speakFallback(last);
 $("stop").onclick=()=>speechSynthesis?.cancel();
 
-$("wa").href="https://wa.me/"+C.contact.whatsapp;
+$("wa").textContent=C.actions?.whatsappLabel||"WhatsApp";
+$("call").textContent=C.actions?.callLabel||"اتصال";
+$("email").textContent=C.actions?.emailLabel||"البريد";
+$("maps").textContent=C.actions?.directionsLabel||"الاتجاهات";
+$("wa").href="https://wa.me/"+String(C.contact.whatsapp||"").replace(/[^0-9]/g,"");
 $("call").href="tel:"+C.contact.phone;
 $("email").href="mailto:"+C.contact.email;
 $("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(C.contact.address);
@@ -160,8 +165,11 @@ if(SR){
     $("listen").textContent="🎙️ أستمع…";
   };
   rec.onresult=e=>{
-    const text=e.results[0][0].transcript.toLowerCase();
-    const hit=C.questions.find(q=>text.includes(q.label.toLowerCase()));
+    const text=normalize(e.results[0][0].transcript);
+    const hit=C.questions.find(q=>{
+      const terms=[q.label,q.id,...(q.keywords||[])].map(normalize).filter(Boolean);
+      return terms.some(term=>text.includes(term));
+    });
     if(hit) showAnswer(hit);
     else answer.textContent="لم أجد سؤالاً مطابقاً للمعلومات المثبتة. اختر أحد الأسئلة المتاحة.";
   };
