@@ -93,9 +93,17 @@ function speakPastel(text){
   animateArabicMouth(false);
   const u=new SpeechSynthesisUtterance(text);
   const pool=pastelVoices.filter(v=>pastelLanguage==="fr"?/^fr/i.test(v.lang):/^ar/i.test(v.lang));
-  const preferred=pastelLanguage==="fr"?(pool.find(v=>/fr-FR/i.test(v.lang))||pool.find(v=>/fr-/i.test(v.lang))||pool[0]):(pool.find(v=>/ar-DZ/i.test(v.lang))||pool.find(v=>/ar-/i.test(v.lang))||pool[0]);
+  const preferred=pastelLanguage==="fr"
+    ? (pool.find(v=>/fr-FR/i.test(v.lang)&&/Google|Microsoft|Thomas|Amelie|Audrey|Julie|Denise/i.test(v.name))
+      ||pool.find(v=>/fr-FR/i.test(v.lang))
+      ||pool.find(v=>/^fr/i.test(v.lang))
+      ||pool[0])
+    : (pool.find(v=>/ar-DZ/i.test(v.lang))
+      ||pool.find(v=>/ar-SA/i.test(v.lang))
+      ||pool.find(v=>/^ar/i.test(v.lang))
+      ||pool[0]);
   u.voice=preferred||null;
-  u.lang=(u.voice&&u.voice.lang)||(pastelLanguage==="fr"?"fr-FR":"ar-DZ");
+  u.lang=(u.voice&&u.voice.lang)||(pastelLanguage==="fr"?"fr-FR":"ar-SA");
   u.rate=0.91;
   u.pitch=0.84;
   u.volume=1;
