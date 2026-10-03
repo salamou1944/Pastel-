@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PASTEL — Host Standard</title>
+<script type="module" src="https://unpkg.com/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f8f2eb;background:#100c0a}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 70% 12%,#5a3e2d 0,#211711 35%,#0b0908 78%)}
+.shell{width:min(1180px,100%);min-height:100vh;margin:auto;padding:16px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:16px;align-items:stretch}
+.host-card,.chat{border:1px solid rgba(255,255,255,.12);border-radius:28px;background:rgba(22,16,13,.72);box-shadow:0 24px 80px rgba(0,0,0,.28);overflow:hidden}
+.host-card{min-height:calc(100vh - 32px);position:relative}
+model-viewer{width:100%;height:100%;min-height:620px;--poster-color:transparent;background:radial-gradient(circle at 50% 30%,rgba(234,203,164,.18),transparent 35%)}
+.badge{position:absolute;top:18px;right:18px;z-index:3;padding:9px 13px;border-radius:999px;background:#100c0acc;border:1px solid #ffffff18;font-size:12px;backdrop-filter:blur(12px)}
+.status{position:absolute;bottom:18px;right:18px;left:18px;z-index:3;padding:10px 14px;border-radius:999px;background:#0b0908dd;border:1px solid #ffffff12;font-size:13px;transition:.3s}
+.status.ok{opacity:0;transform:translateY(8px)}
+.chat{padding:26px;align-self:center}.eyebrow{color:#e8c99f;letter-spacing:.12em;font-size:12px;font-weight:800}
+h1{font-size:clamp(32px,5vw,58px);line-height:1.05;margin:12px 0}p{color:#cfc4bb;line-height:1.75}
+.questions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:20px 0}
+button{font:inherit;border:1px solid #ffffff16;background:#ffffff08;color:#fff;border-radius:14px;padding:13px 12px;cursor:pointer}
+button:hover{background:#ffffff12}.primary{background:#e8c99f;color:#18110d;border:0;font-weight:800}
+.answer{min-height:110px;border-radius:18px;background:#0b0908;padding:16px;line-height:1.75;color:#f5eee8}
+.actions{display:flex;gap:9px;margin-top:10px}.actions button{flex:1}
+.note{font-size:12px;color:#9e938a;margin-top:16px}
+@media(max-width:820px){.shell{grid-template-columns:1fr;padding:10px}.host-card{min-height:58vh}.host-card model-viewer{min-height:58vh}.chat{align-self:auto}.questions{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+<section class="host-card">
+<div class="badge">PASTEL HOST · STANDARD 3D</div>
+<model-viewer id="host" src="https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus%20Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png" alt="PASTEL 3D Host" camera-controls camera-orbit="0deg 0deg 72%" field-of-view="24deg" shadow-intensity=".45" exposure="1.05" interaction-prompt="none" loading="eager"></model-viewer>
+<div id="status" class="status">جاري تحميل المضيف ثلاثي الأبعاد…</div>
+</section>
+<section class="chat">
+<div class="eyebrow">PASTEL PASTRY&COFFEE</div>
+<h1>مرحباً.<br>أنا هنا لخدمتك.</h1>
+<p>اسألني عن الأشياء التي نملك معلومات موثقة عنها. إذا لم تكن المعلومة مثبتة، لن أخمّن.</p>
+<div class="questions">
+<button data-q="الخدمات">الخدمات</button>
+<button data-q="الحلويات">الحلويات</button>
+<button data-q="المشروبات">المشروبات</button>
+<button data-q="الموقع">الموقع</button>
+<button data-q="التواصل">التواصل</button>
+<button data-q="الأسعار">الأسعار</button>
+</div>
+<div id="answer" class="answer">اختر سؤالاً لأجيبك.</div>
+<div class="actions"><button id="speak" class="primary">استمع للإجابة</button><button id="stop">إيقاف الصوت</button></div>
+<div class="note">نسخة Standard مستقلة — لا تعتمد على TalkingHead.</div>
+</section>
+</div>
+<script>
+const A={
+الخدمات:"PASTEL يقدم الفطور والغداء والعشاء والبرانش والمشروبات.",
+الحلويات:"لدينا pâtisseries وviennoiseries وmillefeuille وalmond croissant وpistachio trompe-l’œil وblondie وmacarons والتارت والحلويات الفردية والكيك.",
+المشروبات:"لدينا القهوة والشاي المنزلي والـsmoothies والمشروبات المميزة.",
+الموقع:"العنوان: Résidence El Chourouk، Akid Lotfi، Oran 31000، Algeria.",
+التواصل:"يمكنك التواصل مع PASTEL عبر WhatsApp أو الهاتف أو البريد الإلكتروني.",
+الأسعار:"الأسعار الكاملة غير مثبتة في قاعدة المعرفة الحالية، لذلك لن أخمّنها."
+};
+let last="";
+function speak(text){if(!("speechSynthesis"in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="ar-DZ";u.rate=.88;u.pitch=1;speechSynthesis.speak(u)}
+document.querySelectorAll("[data-q]").forEach(b=>b.addEventListener("click",()=>{last=A[b.dataset.q]||"هذه المعلومة غير مثبتة حالياً.";document.querySelector("#answer").textContent=last;speak(last)}));
+document.querySelector("#speak").onclick=()=>last&&speak(last);
+document.querySelector("#stop").onclick=()=>speechSynthesis.cancel();
+const m=document.querySelector("#host"),s=document.querySelector("#status");
+m.addEventListener("load",()=>s.classList.add("ok"),{once:true});
+m.addEventListener("error",()=>{s.textContent="تعذر تحميل نموذج المضيف. يمكنك متابعة الحوار.";});
+</script>
+</body>
+</html>
