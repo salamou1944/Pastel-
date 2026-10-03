@@ -7,3 +7,65 @@ form.addEventListener("submit",e=>{e.preventDefault();ask(input.value.trim())});
 document.querySelectorAll(".quick-pills [data-q]").forEach(b=>b.addEventListener("click",()=>ask(b.dataset.q)));
 document.querySelector("#speakWelcome").addEventListener("click",()=>{if("speechSynthesis"in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance("مرحباً بك في باستيل. أنا مضيفك في باستيل. كيف يمكنني مساعدتك اليوم؟");u.lang="ar-DZ";speechSynthesis.speak(u)}});
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;const vb=document.querySelector("#voiceButton");if(!SpeechRecognition){vb.disabled=true;voiceStatus.textContent="التحدث الصوتي غير متاح في هذا المتصفح."}else{vb.addEventListener("click",()=>{const r=new SpeechRecognition();r.lang="ar-DZ";r.interimResults=false;r.onstart=()=>voiceStatus.textContent="أستمع إليك...";r.onerror=()=>voiceStatus.textContent="تعذر استخدام الميكروفون.";r.onend=()=>voiceStatus.textContent="يمكنك التحدث معي مرة أخرى.";r.onresult=e=>ask(e.results[0][0].transcript);r.start()})}
+
+
+/* PASTEL 3D HOST — TalkingHead */
+let pastelHead = null;
+let pastelVoices = [];
+const AVATAR_URL = "https://readyplayerme.github.io/visage/male.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png";
+
+async function initPastel3DHost(){
+  const node = document.querySelector("#avatar3d");
+  const loading = document.querySelector("#avatarLoading");
+  if(!node) return;
+  try{
+    const { TalkingHead } = await import("https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs");
+    pastelHead = new TalkingHead(node,{
+      cameraView:"upper",
+      avatarSpeakingHeadMove:0.35,
+      avatarListeningEyeContact:0.65,
+      lipsyncModules:["en","fi","lt"]
+    });
+    await pastelHead.showAvatar({
+      url: AVATAR_URL,
+      body:"M",
+      avatarMood:"neutral"
+    });
+    pastelHead.setView("upper",{cameraDistance:0.72,cameraY:0.02});
+    pastelHead.start();
+    loading?.classList.add("ready");
+  }catch(error){
+    console.error("PASTEL 3D Host failed:",error);
+    if(loading) loading.innerHTML="<b>تعذر تحميل المضيف ثلاثي الأبعاد</b><small>سيبقى الحوار متاحاً</small>";
+  }
+}
+
+function loadPastelVoices(){
+  if(!("speechSynthesis" in window)) return;
+  pastelVoices=speechSynthesis.getVoices();
+}
+if("speechSynthesis" in window){
+  loadPastelVoices();
+  speechSynthesis.addEventListener("voiceschanged",loadPastelVoices);
+}
+function speakPastel(text){
+  if(!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  const ar=pastelVoices.filter(v=>/^ar/i.test(v.lang));
+  const dz=ar.find(v=>/DZ/i.test(v.lang));
+  const maleHint=ar.find(v=>/male|man|mohamed|ahmed|omar|youssef/i.test(v.name));
+  u.voice=dz||maleHint||ar[0]||pastelVoices.find(v=>/^fr/i.test(v.lang))||null;
+  u.lang=(u.voice&&u.voice.lang)||"ar-DZ";
+  u.rate=0.92;
+  u.pitch=0.88;
+  u.volume=1;
+  u.onstart=()=>{try{pastelHead?.playGesture("handup",1.4,false,500)}catch{}};
+  speechSynthesis.speak(u);
+}
+window.speakPastel=speakPastel;
+if(window.speechSynthesis){
+  const originalAsk=window.ask;
+}
+document.querySelector("#speakWelcome")?.addEventListener("click",()=>speakPastel("مرحباً بك في باستيل. أنا مضيفك في باستيل. كيف يمكنني مساعدتك اليوم؟"));
+initPastel3DHost();
