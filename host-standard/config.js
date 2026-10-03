@@ -14,10 +14,11 @@ window.HOST_CONFIG = {
   },
 
   host: {
-    modelUrl: "https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus%20Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png",
+    modelUrl: "https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/mpfb.glb",
     body: "M",
     mood: "neutral",
-    view: "upper"
+    view: "upper",
+    source: "TalkingHead MPFB reference avatar (CC0); replace with customer-approved commercial GLB"
   },
 
   language: {
