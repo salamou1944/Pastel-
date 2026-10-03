@@ -5,11 +5,11 @@ function answerArabic(q){const x=q.toLowerCase();if(x.includes("تقدم")||x.in
 function answer(q){
   if(pastelLanguage!=="fr") return answerArabic(q);
   const x=q.toLowerCase();
-  if(x.includes("service")||x.includes("proposez")||x.includes("offrez")) return "Les services vérifiés de PASTEL sont : petit-déjeuner, déjeuner, dîner, brunch et boissons.";
-  if(x.includes("pâtisserie")||x.includes("croissant")||x.includes("macaron")||x.includes("tarte")||x.includes("dessert")||x.includes("menu")) return "Parmi les produits vérifiés : pâtisseries, viennoiseries, millefeuille, almond croissant, pistachio trompe-l’œil, blondie, macarons, tartes, desserts individuels et gâteaux signature.";
-  if(x.includes("boisson")||x.includes("café")||x.includes("thé")||x.includes("drink")||x.includes("coffee")||x.includes("tea")) return "Dans les informations vérifiées : smoothies, café, thé maison et boissons signature.";
-  if(x.includes("petit-déjeuner")||x.includes("brunch")||x.includes("breakfast")) return "PASTEL propose, selon les informations vérifiées, le petit-déjeuner et le brunch.";
-  if(x.includes("déjeuner")||x.includes("dîner")||x.includes("lunch")||x.includes("dinner")) return "PASTEL propose, selon les informations vérifiées, le déjeuner et le dîner.";
+  if(x.includes("service")||x.includes("proposez")||x.includes("offrez")) return "Chez PASTEL, vous trouverez le petit-déjeuner, le déjeuner, le dîner, le brunch et les boissons.";
+  if(x.includes("pâtisserie")||x.includes("croissant")||x.includes("macaron")||x.includes("tarte")||x.includes("dessert")||x.includes("menu")) return "Nous proposons notamment des pâtisseries, des viennoiseries, du millefeuille, des croissants aux amandes, des créations à la pistache, des blondies, des macarons, des tartes, des desserts individuels et des gâteaux signature.";
+  if(x.includes("boisson")||x.includes("café")||x.includes("thé")||x.includes("drink")||x.includes("coffee")||x.includes("tea")) return "Pour les boissons, nous avons notamment des smoothies, du café, du thé maison et des boissons signature.";
+  if(x.includes("petit-déjeuner")||x.includes("brunch")||x.includes("breakfast")) return "Oui. PASTEL propose le petit-déjeuner et le brunch.";
+  if(x.includes("déjeuner")||x.includes("dîner")||x.includes("lunch")||x.includes("dinner")) return "Oui. PASTEL propose le déjeuner et le dîner.";
   if(x.includes("où")||x.includes("adresse")||x.includes("location")||x.includes("where")) return "Adresse : Résidence El Chourouk, Akid Lotfi, Oran 31000, Algérie. Plus Code : PCF8+P4V.";
   if(x.includes("contact")||x.includes("téléphone")||x.includes("whatsapp")||x.includes("phone")) return "Téléphone et WhatsApp : +213 541 33 28 77. E-mail : sarl.pastel.pastry@gmail.com.";
   if(x.includes("prix")||x.includes("price")) return "Je n’ai pas de liste de prix actuelle vérifiée, donc je ne vais pas inventer de prix. Vous pouvez contacter PASTEL directement par WhatsApp ou téléphone.";
