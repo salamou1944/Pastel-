@@ -73,6 +73,8 @@ button{font:inherit;border:1px solid rgba(255,255,255,.10);background:rgba(255,2
 </div>
 <script type="module">
 import { TalkingHead } from "talkinghead";
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const C=window.HOST_CONFIG;
 const $=id=>document.getElementById(id);
@@ -155,6 +157,47 @@ $("call").href="tel:"+C.contact.phone;
 $("email").href="mailto:"+C.contact.email;
 $("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(C.contact.address);
 
+function startDirectAvatar(url){
+  return new Promise((resolve,reject)=>{
+    const node=$("avatar");
+    node.innerHTML="";
+    const scene=new THREE.Scene();
+    const camera=new THREE.PerspectiveCamera(28,node.clientWidth/Math.max(1,node.clientHeight),.01,100);
+    camera.position.set(0,1.55,3.0);
+    camera.lookAt(0,1.35,0);
+    const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:"high-performance"});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+    renderer.setSize(node.clientWidth,node.clientHeight,false);
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+    node.appendChild(renderer.domElement);
+    scene.add(new THREE.HemisphereLight(0xfff4e8,0x33251d,2.2));
+    const key=new THREE.DirectionalLight(0xfff2df,3.0); key.position.set(2,3,4); scene.add(key);
+    const fill=new THREE.DirectionalLight(0xd9e8ff,1.0); fill.position.set(-2,1,2); scene.add(fill);
+    const loader=new GLTFLoader();
+    loader.load(url,gltf=>{
+      const model=gltf.scene;
+      model.position.set(0,0,0);
+      model.scale.setScalar(1);
+      scene.add(model);
+      const clock=new THREE.Clock();
+      const resize=()=>{
+        const w=Math.max(1,node.clientWidth),h=Math.max(1,node.clientHeight);
+        camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h,false);
+      };
+      window.addEventListener("resize",resize,{passive:true});
+      const animate=()=>{
+        const dt=clock.getDelta();
+        model.rotation.y=Math.sin(performance.now()*.00035)*.035;
+        renderer.render(scene,camera);
+        requestAnimationFrame(animate);
+      };
+      animate();
+      window.PASTEL_DIRECT_AVATAR={scene,camera,renderer,model,resize};
+      resolve();
+    },undefined,reject);
+  });
+}
+
 async function startHost(){
   try{
     const head=new TalkingHead($("avatar"),{
@@ -185,7 +228,13 @@ async function startHost(){
         console.warn("PASTEL HOST avatar source failed:",url,err);
       }
     }
-    if(!loaded) throw lastErr || new Error("No avatar source available.");
+    if(!loaded){
+      console.warn("TalkingHead avatar loading failed; using direct Three.js host fallback.",lastErr);
+      await startDirectAvatar(C.host.modelUrl);
+      hostReady=true;
+      setStatus("المضيف ثلاثي الأبعاد جاهز؛ وضع الحركة المتقدم غير متاح حالياً.","ok");
+      return;
+    }
     try{head.setView(C.host.view||"upper",{cameraDistance:C.host.cameraDistance||1.15,cameraY:C.host.cameraY||0.02,cameraRotateX:C.host.cameraRotateX||-0.02});}catch{}
     try{head.setLighting({lightAmbientIntensity:.72,lightDirectIntensity:1.15,lightDirectPhi:1.0,lightDirectTheta:.7,lightSpotIntensity:.35,lightSpotPhi:1.15,lightSpotTheta:.55});}catch{}
     window.PASTEL_HEAD=head;
