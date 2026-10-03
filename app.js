@@ -6,12 +6,13 @@ function ask(q){if(!q)return;addMessage(q,"user");input.value="";setTimeout(()=>
 form.addEventListener("submit",e=>{e.preventDefault();ask(input.value.trim())});
 document.querySelectorAll(".quick-pills [data-q]").forEach(b=>b.addEventListener("click",()=>ask(b.dataset.q)));
 
-const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;const vb=document.querySelector("#voiceButton");if(!SpeechRecognition){vb.disabled=true;voiceStatus.textContent="التحدث الصوتي غير متاح في هذا المتصفح."}else{vb.addEventListener("click",()=>{const r=new SpeechRecognition();r.lang="ar-DZ";r.interimResults=false;r.onstart=()=>voiceStatus.textContent="أستمع إليك...";r.onerror=()=>voiceStatus.textContent="تعذر استخدام الميكروفون.";r.onend=()=>voiceStatus.textContent="يمكنك التحدث معي مرة أخرى.";r.onresult=e=>ask(e.results[0][0].transcript);r.start()})}
+const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;const vb=document.querySelector("#voiceButton");if(!SpeechRecognition){vb.disabled=true;voiceStatus.textContent="التحدث الصوتي غير متاح في هذا المتصفح."}else{vb.addEventListener("click",()=>{const r=new SpeechRecognition();r.lang=pastelLanguage==="fr"?"fr-FR":"ar-DZ";r.interimResults=false;r.onstart=()=>voiceStatus.textContent="أستمع إليك...";r.onerror=()=>voiceStatus.textContent="تعذر استخدام الميكروفون.";r.onend=()=>voiceStatus.textContent="يمكنك التحدث معي مرة أخرى.";r.onresult=e=>ask(e.results[0][0].transcript);r.start()})}
 
 
 /* PASTEL 3D HOST — TalkingHead */
 let pastelHead = null;
 let pastelVoices = [];
+let pastelLanguage = "ar";
 const AVATAR_URL = "https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png";
 
 async function initPastel3DHost(){
@@ -78,11 +79,10 @@ function speakPastel(text){
   window.__pastelSpeaking=false;
   animateArabicMouth(false);
   const u=new SpeechSynthesisUtterance(text);
-  const ar=pastelVoices.filter(v=>/^ar/i.test(v.lang));
-  const dz=ar.find(v=>/DZ/i.test(v.lang));
-  const maleHint=ar.find(v=>/male|man|mohamed|ahmed|omar|youssef/i.test(v.name));
-  u.voice=dz||maleHint||ar[0]||pastelVoices.find(v=>/^fr/i.test(v.lang))||null;
-  u.lang=(u.voice&&u.voice.lang)||"ar-DZ";
+  const pool=pastelVoices.filter(v=>pastelLanguage==="fr"?/^fr/i.test(v.lang):/^ar/i.test(v.lang));
+  const preferred=pastelLanguage==="fr"?(pool.find(v=>/fr-FR/i.test(v.lang))||pool.find(v=>/fr-/i.test(v.lang))||pool[0]):(pool.find(v=>/ar-DZ/i.test(v.lang))||pool.find(v=>/ar-/i.test(v.lang))||pool[0]);
+  u.voice=preferred||null;
+  u.lang=(u.voice&&u.voice.lang)||(pastelLanguage==="fr"?"fr-FR":"ar-DZ");
   u.rate=0.91;
   u.pitch=0.84;
   u.volume=1;
@@ -102,5 +102,6 @@ window.speakPastel=speakPastel;
 if(window.speechSynthesis){
   const originalAsk=window.ask;
 }
-document.querySelector("#speakWelcome")?.addEventListener("click",()=>speakPastel("مرحباً بك في باستيل. أنا مضيفك في باستيل. كيف يمكنني مساعدتك اليوم؟"));
+document.querySelectorAll("[data-lang]").forEach(b=>b.addEventListener("click",()=>{pastelLanguage=b.dataset.lang;document.querySelectorAll("[data-lang]").forEach(x=>x.classList.toggle("active",x.dataset.lang===pastelLanguage));if(input)input.placeholder=pastelLanguage==="fr"?"Écrivez votre question à l’employé PASTEL…":"اكتب سؤالك إلى موظف PASTEL…";if(vb&&SpeechRecognition)vb.textContent=pastelLanguage==="fr"?"Parlez-moi":"تحدث معي";}));
+document.querySelector("#speakWelcome")?.addEventListener("click",()=>speakPastel(pastelLanguage==="fr"?"Bonjour et bienvenue chez PASTEL. Je suis votre hôte. Comment puis-je vous aider aujourd’hui ?":"مرحباً بك في باستيل. أنا مضيفك في باستيل. كيف يمكنني مساعدتك اليوم؟"));
 initPastel3DHost();
