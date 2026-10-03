@@ -12,14 +12,14 @@ window.PASTEL_PREMIUM = {
     surface: "rgba(24,18,14,.78)"
   },
   host: {
-    modelUrl: "../assets/mpfb.glb",
-    body: "M",
-    mood: "neutral",
-    view: "upper"
+    modelUrl: "../assets/brunette.glb",
+    body: "F",
+    mood: "happy",
+    view: "mid"
   },
   speech: {
     lang: "ar-DZ",
-    rate: 0.9,
+    rate: 1.28,
     pitch: 1
   },
   contact: {
