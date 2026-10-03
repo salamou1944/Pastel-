@@ -132,7 +132,8 @@ async function startHost(){
       avatarListeningEyeContact:.65,
       avatarSpeakingEyeContact:.7
     });
-    try{head.setView(C.host.view||"upper");}catch{}
+    try{head.setView(C.host.view||"upper",{cameraDistance:C.host.cameraDistance||1.15,cameraY:C.host.cameraY||0.02,cameraRotateX:C.host.cameraRotateX||-0.02});}catch{}
+    try{head.setLighting({lightAmbientIntensity:.72,lightDirectIntensity:1.15,lightDirectPhi:1.0,lightDirectTheta:.7,lightSpotIntensity:.35,lightSpotPhi:1.15,lightSpotTheta:.55});}catch{}
     window.PASTEL_HEAD=head;
     status.textContent="المضيف جاهز.";
     status.classList.add("ok");
