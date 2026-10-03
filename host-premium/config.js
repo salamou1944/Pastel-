@@ -37,4 +37,18 @@ window.PASTEL_PREMIUM = {
     {label:"التواصل", keys:["تواصل","هاتف","واتساب","whatsapp","contact"], answer:"يمكنك التواصل مع PASTEL عبر WhatsApp أو الهاتف أو البريد الإلكتروني."},
     {label:"الأسعار", keys:["سعر","أسعار","ثمن","prix","price"], answer:"الأسعار الكاملة غير مثبتة في قاعدة المعرفة الحالية، لذلك لن أخمّنها."}
   ]
+  ,extensions: {
+    version: 1,
+    capabilities: {
+      knowledge: true,
+      speech: true,
+      gestures: true,
+      contactActions: true,
+      futureMenu: false,
+      voiceInput: false,
+      ordering: false,
+      booking: false,
+      analytics: false
+    }
+  }
 };
