@@ -8,147 +8,80 @@
 <script src="./config.js"></script>
 <script>window.addEventListener("error",e=>{const el=document.getElementById("status");if(el)el.textContent="خطأ في تحميل مكونات المضيف";});</script>
 <script type="module">
-import { TalkingHead } from "talkinghead";
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js/+esm";
 
 const C=window.PASTEL_PREMIUM||{};
-const K=(C.knowledge||[]).map(x=>[x.label,x.answer,x.keys||[]]);
-const q=document.getElementById("questions"),a=document.getElementById("answer"),s=document.getElementById("status"),input=document.getElementById("input"),send=document.getElementById("send"),avatar=document.getElementById("avatar");
-let head=null, voice=null, speaking=false, mouthTimer=null, gestureTimer=null;
-
-function chooseArabicVoice(){
- const voices=speechSynthesis.getVoices();
- voice=voices.find(v=>/^ar-DZ/i.test(v.lang))||voices.find(v=>/^ar/i.test(v.lang))||voices.find(v=>/Arabic/i.test(v.name))||null;
-}
-chooseArabicVoice(); speechSynthesis.onvoiceschanged=chooseArabicVoice;
-
-function animateSpeech(on, intensity=1){
- speaking=on;
- if(mouthTimer){clearInterval(mouthTimer);mouthTimer=null}
- if(!on){ try{head?.setFixedValue("jawOpen",0,180)}catch(e){} return; }
- let phase=0;
- mouthTimer=setInterval(()=>{
-   if(!speaking){clearInterval(mouthTimer);mouthTimer=null;return}
-   phase+=0.62;
-   const envelope=Math.min(1,Math.max(.35,intensity));
-   const jaw=Math.max(0,Math.min(.72,(0.10+Math.abs(Math.sin(phase))*0.20+Math.abs(Math.sin(phase*1.83))*0.13)*envelope));
-   try{head?.setFixedValue("jawOpen",jaw,70)}catch(e){}
- },70);
-}
+const K=C.knowledge||[];
+const q=document.getElementById("questions"),a=document.getElementById("answer"),s=document.getElementById("status"),input=document.getElementById("input"),send=document.getElementById("send"),mount=document.getElementById("avatar");
+let model=null,lastText="",speaking=false,raf=0;
 
 function speak(text){
- if(!("speechSynthesis" in window)){
-   s.textContent="الصوت غير متاح في هذا المتصفح";
-   return;
- }
+ if(!("speechSynthesis" in window)) return;
  speechSynthesis.cancel();
- const parts=String(text).replace(/\s+/g," ").trim().split(/(?<=[.!؟،؛:])\s+/).filter(Boolean);
- let index=0;
- const next=()=>{
-   if(index>=parts.length){animateSpeech(false);return}
-   const chunk=parts[index++];
-   const u=new SpeechSynthesisUtterance(chunk);
-   u.lang=voice?.lang||C.speech?.lang||"ar-DZ"; u.voice=voice||null;
-   u.rate=/[.!؟]$/.test(chunk)?1.24:(C.speech?.rate||1.30); u.pitch=C.speech?.pitch||1; u.volume=1;
-   u.onstart=()=>{animateSpeech(true,.9);head?.makeEyeContact(900)};
-   u.onboundary=(e)=>{
-     const ch=chunk.slice(e.charIndex||0,(e.charIndex||0)+14);
-     const vowels=(ch.match(/[اويىأةإؤ]/g)||[]).length;
-     animateSpeech(true,.55+Math.min(.65,vowels*.12));
-     head?.makeEyeContact(650);
-   };
-   u.onpause=()=>animateSpeech(false);
-   u.onresume=()=>animateSpeech(true,.9);
-   u.onend=()=>{animateSpeech(false);setTimeout(next,/[,،؛:]$/.test(chunk)?80:35)};
-   u.onerror=()=>{animateSpeech(false);setTimeout(next,40)};
-   speechSynthesis.speak(u);
- };
- next();
+ const u=new SpeechSynthesisUtterance(text);
+ u.lang=C.speech?.lang||"ar-DZ"; u.rate=C.speech?.rate||1.18; u.pitch=C.speech?.pitch||1; u.volume=1;
+ u.onstart=()=>{speaking=true;s.classList.add("ok")};
+ u.onend=()=>{speaking=false};
+ u.onerror=()=>{speaking=false};
+ speechSynthesis.speak(u);
 }
 
 function respond(text){
- a.textContent=text;
- if(C.extensions?.capabilities?.contactActions) renderContactActions();
- head?.lookAtCamera(700);
- head?.setMood("happy");
- if(gestureTimer)clearTimeout(gestureTimer);
-
- // Use TalkingHead's verified built-in hand gestures so the host visibly reacts
- // instead of relying on animations that may not exist in the GLB.
- try{
-   head?.stopGesture(250);
-   head?.playGesture(text.length>80?"side":"handup",2.4,false,350);
- }catch(e){}
- gestureTimer=setTimeout(()=>{
-   try{head?.stopGesture(450)}catch(e){}
- },2500);
-
+ lastText=text; a.textContent=text;
+ model?.rotation.set(0,.10,0);
  speak(text);
 }
 
-K.forEach(([label,text])=>{
- const b=document.createElement("button"); b.className="q"; b.textContent=label;
- b.onclick=()=>respond(text); q.appendChild(b);
-});
-
 function answerQuestion(raw){
  const t=raw.trim().toLowerCase(); if(!t)return;
- if(!("speechSynthesis" in window)) s.textContent="الصوت غير متاح في هذا المتصفح؛ ستظل الإجابات النصية متاحة.";
- const hit=K.find(item=>(item[2]||[]).some(key=>t.includes(String(key).toLowerCase())))||null;
- respond(hit?hit[1]:"يمكنني مساعدتك بالمعلومات المثبتة عن خدمات PASTEL وحلوياته ومشروباته وموقعه وطرق التواصل. إذا كنت تسأل عن الأسعار، فهي غير مثبتة حالياً ولن أخمّنها.");
-}
-function renderContactActions(){
- let box=document.getElementById("contact-actions");
- if(!box){
-   box=document.createElement("div"); box.id="contact-actions"; box.className="actions";
-   a.insertAdjacentElement("afterend",box);
- }
- if(box.dataset.ready==="1") return;
- box.innerHTML="";
- const items=[
-  ["WhatsApp","https://wa.me/"+String(C.contact?.whatsapp||"").replace(/[^0-9]/g,"")],
-  ["اتصال","tel:"+String(C.contact?.phone||"")],
-  ["البريد","mailto:"+String(C.contact?.email||"")],
-  ["الاتجاهات","https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(C.contact?.address||"")]
- ];
- items.forEach(([label,href])=>{
-  const el=document.createElement("a"); el.className="action"; el.textContent=label; el.href=href; el.target=href.startsWith("http")?"_blank":"_self"; el.rel="noopener"; el.style.textDecoration="none"; el.style.display="block"; box.appendChild(el);
- });
- box.dataset.ready="1";
+ const hit=K.find(item=>(item.keys||[]).some(k=>t.includes(String(k).toLowerCase())));
+ respond(hit?.answer||"يمكنني مساعدتك بالمعلومات المثبتة عن خدمات PASTEL وحلوياته ومشروباته وموقعه وطرق التواصل. إذا كنت تسأل عن الأسعار، فهي غير مثبتة حالياً ولن أخمّنها.");
 }
 
+K.forEach(item=>{const b=document.createElement("button");b.className="q";b.textContent=item.label;b.onclick=()=>respond(item.answer);q.appendChild(b)});
 send.onclick=()=>answerQuestion(input.value);
 input.addEventListener("keydown",e=>{if(e.key==="Enter")answerQuestion(input.value)});
+document.getElementById("speak")?.addEventListener("click",()=>lastText&&speak(lastText));
+document.getElementById("stop")?.addEventListener("click",()=>{speechSynthesis?.cancel();speaking=false});
 
-async function boot(){
- try{
-  head=new TalkingHead(avatar,{
-   cameraView:"mid",
-   cameraRotateEnable:false,
-   cameraPanEnable:false,
-   cameraZoomEnable:false,
-   modelFPS:30,
-   modelMovementFactor:1,
-   avatarIdleEyeContact:0.75,
-   avatarIdleHeadMove:0.9,
-   avatarSpeakingEyeContact:0.9,
-   avatarSpeakingHeadMove:1,
-   avatarMood:"happy"
-  });
-  await head.showAvatar({
-   url:"../assets/brunette.glb",
-   body:"F",
-   avatarMood:"happy",
-   avatarIdleEyeContact:0.75,
-   avatarIdleHeadMove:0.9,
-   avatarSpeakingEyeContact:0.9,
-   avatarSpeakingHeadMove:1
-  });
-  head.lookAtCamera(1200);
-  s.textContent="3D Host متصل";
- }catch(error){
-  console.error(error);
-  s.textContent="تعذر تشغيل المضيف ثلاثي الأبعاد";
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(30,1,.01,1000);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.setClearColor(0,0);
+mount.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffead0,0x24150f,2.2));
+const key=new THREE.DirectionalLight(0xffe4c5,3); key.position.set(2,4,4); scene.add(key);
+const fill=new THREE.DirectionalLight(0xd9e7ff,1.2); fill.position.set(-3,2,1); scene.add(fill);
+
+function resize(){const w=Math.max(1,mount.clientWidth),h=Math.max(1,mount.clientHeight);camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}
+addEventListener("resize",resize); resize();
+
+new GLTFLoader().load("../assets/brunette.glb",g=>{
+ model=g.scene; scene.add(model);
+ const box=new THREE.Box3().setFromObject(model), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
+ model.position.sub(center);
+ const max=Math.max(size.x,size.y,size.z);
+ const dist=max/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))*1.02;
+ camera.position.set(0,size.y*.08,dist); camera.lookAt(0,size.y*.08,0);
+ s.textContent="3D Host متصل";
+ s.classList.remove("error");
+ const clock=new THREE.Clock();
+ function animate(){
+  raf=requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+  model.rotation.y=Math.sin(t*.35)*.035+(speaking?Math.sin(t*3.5)*.018:0);
+  model.position.y=Math.sin(t*.9)*.008;
+  renderer.render(scene,camera);
  }
-}
-boot();
+ animate();
+},xhr=>{
+ s.textContent=xhr.total?("جاري تحميل المضيف ثلاثي الأبعاد… "+Math.round(xhr.loaded/xhr.total*100)+"%"):"جاري تحميل المضيف ثلاثي الأبعاد…";
+},err=>{
+ console.error(err);
+ s.textContent="تعذر تحميل نموذج المضيف ثلاثي الأبعاد";
+ s.classList.add("error");
+});
 </script></body></html>
