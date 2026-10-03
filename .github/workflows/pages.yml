@@ -21,7 +21,15 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
-      - uses: actions/upload-pages-artifact@v3
+      - name: Fetch CC0 3D host asset
+        run: |
+          mkdir -p assets
+          curl -L --fail --retry 3 --retry-delay 2 \
+            -o assets/mpfb.glb \
+            https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/mpfb.glb
+          test -s assets/mpfb.glb
+          file assets/mpfb.glb
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: .
       - id: deployment
