@@ -15,3 +15,5 @@ GitHub Pages deployment is verified by GitHub Actions. A browser-production pass
 
 ## Remaining premium gap
 True facial lip-sync for Arabic speech is not certified in the current runtime. It requires a runtime with compatible facial/morph-target control or a speech/viseme pipeline.
+
+Deployment source synchronized after the final runtime/manifest update.
