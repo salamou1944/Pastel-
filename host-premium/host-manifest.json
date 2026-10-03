@@ -1,20 +1,23 @@
 {
   "product": "PASTEL HOST",
   "version": "premium-3d",
-  "runtime": "Google model-viewer",
-  "avatar": "../assets/mpfb.glb",
+  "runtime": "TalkingHead + Three.js",
+  "avatar": "../assets/brunette.glb",
   "language": "ar-DZ",
   "features": [
-    "real-glb-3d-avatar",
-    "camera-framing",
-    "browser-arabic-speech",
+    "real-human-glb-3d-avatar",
+    "idle-head-and-eye-movement",
+    "speaking-mouth-animation",
+    "arabic-browser-speech",
+    "faster-speech-rate",
+    "interactive-gestures",
     "knowledge-answers",
     "contact-actions",
     "responsive-mobile"
   ],
   "limitations": [
-    "facial-lip-sync is not certified in the current browser runtime",
-    "live browser visual verification is still required for production certification"
+    "browser speech remains device/voice dependent",
+    "true Arabic phoneme-level lip-sync is not certified in this runtime"
   ],
-  "status": "deployed-source-ready"
+  "status": "animated-runtime-source-ready"
 }
