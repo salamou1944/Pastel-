@@ -5,3 +5,5 @@
 @media(max-width:390px){.hero h1{font-size:53px}.host-wrap{height:410px}.portrait-card{height:400px}}
 
 .host-photo img{transition:transform .7s ease}
+
+.language-switch{display:flex;justify-content:flex-end;gap:8px;margin:0 0 12px}.language-switch button{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:inherit;border-radius:999px;padding:8px 13px;font:inherit;cursor:pointer}.language-switch button.active{background:#f4e7d1;color:#17120e;border-color:#f4e7d1}
