@@ -7,15 +7,7 @@
 <meta name="description" content="PASTEL PASTRY&COFFEE — PASTEL Host">
 <title>PASTEL — Host</title>
 <link rel="stylesheet" href="styles.css">
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
-    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs"
-  }
-}
-</script>
+<script type="module" src="https://unpkg.com/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
 </head>
 <body>
 <div class="ambient"></div>
@@ -37,7 +29,7 @@
       <div class="host-wrap">
         <div class="portrait-card">
           <div class="portrait-light"></div>
-          <div id="avatar3d" class="avatar-3d" aria-label="PASTEL 3D Host"><div id="avatarLoading" class="avatar-loading"><span></span><b>جاري تجهيز المضيف…</b></div></div>
+          <div id="avatar3d" class="avatar-3d" aria-label="PASTEL 3D Host"><model-viewer id="pastelModel" src="https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png" alt="PASTEL 3D Host" camera-controls camera-orbit="0deg 0deg 72%" field-of-view="24deg" shadow-intensity="0.45" exposure="1.05" interaction-prompt="none" loading="eager"></model-viewer><div id="avatarLoading" class="avatar-loading"><span></span><b>جاري تجهيز المضيف…</b></div></div>
           <div class="host-tag"><span class="pulse"></span><b>PASTEL 3D HOST</b><small>معك الآن</small></div>
           <div class="portrait-caption">YOUR TABLE-SIDE CONCIERGE</div>
         </div>
