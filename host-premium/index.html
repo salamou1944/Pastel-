@@ -41,20 +41,28 @@ function animateSpeech(on, intensity=1){
 
 function speak(text){
  speechSynthesis.cancel();
- const u=new SpeechSynthesisUtterance(text);
- u.lang=voice?.lang||"ar-DZ"; u.voice=voice||null;
- u.rate=1.28; u.pitch=1; u.volume=1;
- u.onstart=()=>animateSpeech(true,.9);
- u.onboundary=(e)=>{
-   const ch=String(text).slice(e.charIndex||0,(e.charIndex||0)+12);
-   const vowels=(ch.match(/[اويىأةإؤ]/g)||[]).length;
-   animateSpeech(true,.55+Math.min(.65,vowels*.12));
-   head?.makeEyeContact(650);
+ const parts=String(text).replace(/\s+/g," ").trim().split(/(?<=[.!؟،؛:])\s+/).filter(Boolean);
+ let index=0;
+ const next=()=>{
+   if(index>=parts.length){animateSpeech(false);return}
+   const chunk=parts[index++];
+   const u=new SpeechSynthesisUtterance(chunk);
+   u.lang=voice?.lang||"ar-DZ"; u.voice=voice||null;
+   u.rate=/[.!؟]$/.test(chunk)?1.24:1.30; u.pitch=1; u.volume=1;
+   u.onstart=()=>{animateSpeech(true,.9);head?.makeEyeContact(900)};
+   u.onboundary=(e)=>{
+     const ch=chunk.slice(e.charIndex||0,(e.charIndex||0)+14);
+     const vowels=(ch.match(/[اويىأةإؤ]/g)||[]).length;
+     animateSpeech(true,.55+Math.min(.65,vowels*.12));
+     head?.makeEyeContact(650);
+   };
+   u.onpause=()=>animateSpeech(false);
+   u.onresume=()=>animateSpeech(true,.9);
+   u.onend=()=>{animateSpeech(false);setTimeout(next,/[,،؛:]$/.test(chunk)?80:35)};
+   u.onerror=()=>{animateSpeech(false);setTimeout(next,40)};
+   speechSynthesis.speak(u);
  };
- u.onpause=()=>animateSpeech(false);
- u.onresume=()=>animateSpeech(true,.9);
- u.onend=()=>animateSpeech(false); u.onerror=()=>animateSpeech(false);
- speechSynthesis.speak(u);
+ next();
 }
 
 function respond(text){
