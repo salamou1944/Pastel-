@@ -22,37 +22,20 @@ document.querySelectorAll(".quick-pills [data-q]").forEach(b=>b.addEventListener
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;const vb=document.querySelector("#voiceButton");if(!SpeechRecognition){vb.disabled=true;voiceStatus.textContent="التحدث الصوتي غير متاح في هذا المتصفح."}else{vb.addEventListener("click",()=>{const r=new SpeechRecognition();r.lang=pastelLanguage==="fr"?"fr-FR":"ar-DZ";r.interimResults=false;r.onstart=()=>voiceStatus.textContent="أستمع إليك...";r.onerror=()=>voiceStatus.textContent="تعذر استخدام الميكروفون.";r.onend=()=>voiceStatus.textContent="يمكنك التحدث معي مرة أخرى.";r.onresult=e=>ask(e.results[0][0].transcript);r.start()})}
 
 
-/* PASTEL 3D HOST — TalkingHead */
+/* PASTEL 3D HOST — browser-native GLB viewer */
 let pastelHead = null;
 let pastelVoices = [];
 let pastelLanguage = "ar";
-const AVATAR_URL = "https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png";
-
-async function initPastel3DHost(){
-  const node = document.querySelector("#avatar3d");
-  const loading = document.querySelector("#avatarLoading");
-  if(!node) return;
-  try{
-    const { TalkingHead } = await import("https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs");
-    pastelHead = new TalkingHead(node,{
-      cameraView:"upper",
-      avatarSpeakingHeadMove:0.35,
-      avatarListeningEyeContact:0.65,
-      lipsyncModules:["fr","en","fi","lt"]
-    });
-    await pastelHead.showAvatar({
-      url: AVATAR_URL,
-      body:"M",
-      avatarMood:"neutral"
-    });
-    pastelHead.setView("upper",{cameraDistance:0.72,cameraY:0.02});
-    try{ pastelHead.setMood("neutral"); }catch{}
-    pastelHead.start();
-    loading?.classList.add("ready");
-  }catch(error){
-    console.error("PASTEL 3D Host failed:",error);
-    if(loading) loading.innerHTML="<b>تعذر تحميل المضيف ثلاثي الأبعاد</b><small>سيبقى الحوار متاحاً</small>";
-  }
+function initPastel3DHost(){
+  const model=document.querySelector("#pastelModel");
+  const loading=document.querySelector("#avatarLoading");
+  if(!model) return;
+  const ready=()=>loading?.classList.add("ready");
+  model.addEventListener("load",ready,{once:true});
+  model.addEventListener("error",()=>{
+    if(loading) loading.innerHTML="<b>تعذر تحميل المضيف ثلاثي الأبعاد</b><small>يمكنك استخدام الحوار مباشرة</small>";
+  });
+  if(model.loaded) ready();
 }
 
 function loadPastelVoices(){
@@ -63,29 +46,7 @@ if("speechSynthesis" in window){
   loadPastelVoices();
   speechSynthesis.addEventListener("voiceschanged",loadPastelVoices);
 }
-function animateArabicMouth(active){
-  if(!pastelHead) return;
-  if(!active){
-    try{pastelHead.setFixedValue("jawOpen",null);pastelHead.setFixedValue("mouthOpen",null)}catch{}
-    return;
-  }
-  const started=performance.now();
-  const loop=(now)=>{
-    if(!window.__pastelSpeaking) return;
-    const t=(now-started)/1000;
-    // Natural-looking speech cadence for Arabic Web Speech while preserving the 3D facial rig.
-    const pulse=Math.max(0,Math.sin(t*17.5)+0.35*Math.sin(t*31.7))*0.32;
-    const jaw=0.05+pulse;
-    try{
-      pastelHead.setFixedValue("jawOpen",jaw);
-      pastelHead.setFixedValue("mouthOpen",Math.min(0.42,jaw*0.85));
-      pastelHead.setFixedValue("mouthSmileLeft",0.08+0.03*Math.sin(t*2.1));
-      pastelHead.setFixedValue("mouthSmileRight",0.08+0.03*Math.sin(t*2.1));
-    }catch{}
-    requestAnimationFrame(loop);
-  };
-  requestAnimationFrame(loop);
-}
+function animateArabicMouth(active){ return; }
 function speakPastel(text){
   if(!("speechSynthesis" in window)) return;
   speechSynthesis.cancel();
@@ -104,8 +65,8 @@ function speakPastel(text){
       ||pool[0]);
   u.voice=preferred||null;
   u.lang=(u.voice&&u.voice.lang)||(pastelLanguage==="fr"?"fr-FR":"ar-SA");
-  u.rate=0.91;
-  u.pitch=0.84;
+  u.rate=0.88;
+  u.pitch=1.0;
   u.volume=1;
   u.onstart=()=>{
     window.__pastelSpeaking=true;
