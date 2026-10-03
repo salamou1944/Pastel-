@@ -1,0 +1,16 @@
+{
+  "product": "PASTEL HOST",
+  "version": "premium-3d",
+  "runtime": "TalkingHead",
+  "avatar": "../assets/mpfb.glb",
+  "language": "ar-DZ",
+  "features": [
+    "3d-avatar",
+    "facial-animation",
+    "voice",
+    "knowledge-answers",
+    "contact-actions",
+    "responsive-mobile"
+  ],
+  "status": "runtime-ready"
+}
