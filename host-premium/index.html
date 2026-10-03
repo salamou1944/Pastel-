@@ -7,6 +7,35 @@
 </script>
 <script src="./config.js"></script>
 <script>window.addEventListener("error",e=>{const el=document.getElementById("status");if(el)el.textContent="خطأ في تحميل مكونات المضيف";});</script>
+</head><body>
+<div class="app">
+  <section class="stage">
+    <div id="avatar"></div>
+    <div class="copy">
+      <div id="status" class="status">جاري تحميل المضيف ثلاثي الأبعاد…</div>
+      <h1>PASTEL HOST</h1>
+      <p>مضيفك الافتراضي ثلاثي الأبعاد للمعلومات الموثقة عن PASTEL.</p>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="inner">
+      <div class="ey">PASTEL PASTRY&COFFEE · PREMIUM</div>
+      <div class="h">مرحباً بك</div>
+      <div class="intro">اسأل عن الخدمات، الحلويات، المشروبات، الموقع، التواصل أو الأسعار. لن أخمّن معلومة غير مثبتة.</div>
+      <div id="questions" class="questions"></div>
+      <div id="answer" class="answer">اختر سؤالاً لأجيبك.</div>
+      <div class="chat">
+        <input id="input" placeholder="اكتب سؤالك هنا…" autocomplete="off">
+        <button id="send" class="send">إرسال</button>
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button id="speak" class="action">استمع</button>
+        <button id="stop" class="action">إيقاف الصوت</button>
+      </div>
+      <div class="note">Premium 3D يعمل على نفس نموذج المضيف المنشور في GitHub Pages، مع قاعدة المعرفة والصوت العربي.</div>
+    </div>
+  </section>
+</div>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js/+esm";
