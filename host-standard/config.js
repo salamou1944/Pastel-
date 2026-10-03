@@ -15,7 +15,10 @@ window.HOST_CONFIG = {
 
   host: {
     modelUrl: "../assets/mpfb.glb",
-    fallbackModelUrl: "https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/mpfb.glb",
+    fallbackModelUrls: [
+      "https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png",
+      "https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/mpfb.glb"
+    ],
     dracoEnabled: false,
     body: "M",
     mood: "neutral",
