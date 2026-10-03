@@ -70,7 +70,17 @@ function respond(text){
  head?.lookAtCamera(700);
  head?.setMood("happy");
  if(gestureTimer)clearTimeout(gestureTimer);
- 
+
+ // Use TalkingHead's verified built-in hand gestures so the host visibly reacts
+ // instead of relying on animations that may not exist in the GLB.
+ try{
+   head?.stopGesture(250);
+   head?.playGesture(text.length>80?"side":"handup",2.4,false,350);
+ }catch(e){}
+ gestureTimer=setTimeout(()=>{
+   try{head?.stopGesture(450)}catch(e){}
+ },2500);
+
  speak(text);
 }
 
