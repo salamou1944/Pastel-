@@ -14,7 +14,7 @@ window.HOST_CONFIG = {
   },
 
   host: {
-    modelUrl: "https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/mpfb.glb",
+    modelUrl: "./assets/mpfb.glb",
     body: "M",
     mood: "neutral",
     view: "upper",
