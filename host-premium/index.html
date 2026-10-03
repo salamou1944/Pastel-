@@ -25,25 +25,34 @@ function chooseArabicVoice(){
 }
 chooseArabicVoice(); speechSynthesis.onvoiceschanged=chooseArabicVoice;
 
-function animateSpeech(on){
+function animateSpeech(on, intensity=1){
  speaking=on;
  if(mouthTimer){clearInterval(mouthTimer);mouthTimer=null}
- if(!on){ try{head?.setFixedValue("jawOpen",null)}catch(e){} return; }
+ if(!on){ try{head?.setFixedValue("jawOpen",0,180)}catch(e){} return; }
  let phase=0;
  mouthTimer=setInterval(()=>{
    if(!speaking){clearInterval(mouthTimer);mouthTimer=null;return}
-   phase+=0.55;
-   const jaw=Math.max(0,0.18+Math.sin(phase)*0.16+Math.sin(phase*2.1)*0.10);
-   try{head?.setFixedValue("jawOpen",jaw)}catch(e){}
- },85);
+   phase+=0.62;
+   const envelope=Math.min(1,Math.max(.35,intensity));
+   const jaw=Math.max(0,Math.min(.72,(0.10+Math.abs(Math.sin(phase))*0.20+Math.abs(Math.sin(phase*1.83))*0.13)*envelope));
+   try{head?.setFixedValue("jawOpen",jaw,70)}catch(e){}
+ },70);
 }
 
 function speak(text){
  speechSynthesis.cancel();
- animateSpeech(true);
  const u=new SpeechSynthesisUtterance(text);
  u.lang=voice?.lang||"ar-DZ"; u.voice=voice||null;
  u.rate=1.28; u.pitch=1; u.volume=1;
+ u.onstart=()=>animateSpeech(true,.9);
+ u.onboundary=(e)=>{
+   const ch=String(text).slice(e.charIndex||0,(e.charIndex||0)+12);
+   const vowels=(ch.match(/[اويىأةإؤ]/g)||[]).length;
+   animateSpeech(true,.55+Math.min(.65,vowels*.12));
+   head?.makeEyeContact(650);
+ };
+ u.onpause=()=>animateSpeech(false);
+ u.onresume=()=>animateSpeech(true,.9);
  u.onend=()=>animateSpeech(false); u.onerror=()=>animateSpeech(false);
  speechSynthesis.speak(u);
 }
@@ -53,7 +62,7 @@ function respond(text){
  head?.lookAtCamera(700);
  head?.setMood("happy");
  if(gestureTimer)clearTimeout(gestureTimer);
- try{head?.playGesture(text.length>90?"side":"handup",2.2,false,450)}catch(e){}
+ 
  speak(text);
 }
 
