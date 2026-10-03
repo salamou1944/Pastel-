@@ -14,7 +14,7 @@ window.HOST_CONFIG = {
   },
 
   host: {
-    modelUrl: "./assets/mpfb.glb",
+    modelUrl: "../assets/mpfb.glb",
     fallbackModelUrl: "https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/mpfb.glb",
     dracoEnabled: false,
     body: "M",
