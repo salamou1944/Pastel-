@@ -29,13 +29,6 @@ jobs:
             https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/brunette.glb
           test -s assets/mpfb.glb
           file assets/mpfb.glb
-      - name: Optimize 3D host for mobile web
-        run: |
-          npx --yes @gltf-transform/cli optimize assets/mpfb.glb assets/mpfb-optimized.glb --texture-compress webp
-          test -s assets/mpfb-optimized.glb
-          mv assets/mpfb-optimized.glb assets/mpfb.glb
-          file assets/mpfb.glb
-          ls -lh assets/mpfb.glb
       - uses: actions/upload-pages-artifact@v4
         with:
           path: .
