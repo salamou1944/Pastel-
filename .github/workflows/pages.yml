@@ -25,10 +25,10 @@ jobs:
         run: |
           mkdir -p assets
           curl -L --fail --retry 3 --retry-delay 2 \
-            -o assets/brunette.glb \
-            https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/brunette.glb
-          test -s assets/brunette.glb
-          file assets/brunette.glb
+            -o assets/mpfb.glb \
+            https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/mpfb.glb
+          test -s assets/mpfb.glb
+          file assets/mpfb.glb
       - uses: actions/upload-pages-artifact@v4
         with:
           path: .
