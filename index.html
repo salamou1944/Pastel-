@@ -70,13 +70,10 @@ loader.load(MODEL,g=>{
   const box=new THREE.Box3().setFromObject(model), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
   model.position.sub(center);
   const max=Math.max(size.x,size.y,size.z);
-  const dist=max/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))*1.05;
+  const dist=max/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))*1.65;
   camera.position.set(0,0,dist);
+  // Wider framing: show the complete available avatar instead of a tight bust crop.
   camera.lookAt(0,0,0);
-  // Put the upper body/head in the viewport while retaining a recognizably human figure.
-  const yOffset=size.y*.10;
-  camera.position.y=yOffset;
-  camera.lookAt(0,yOffset,0);
   status.textContent="المضيف ثلاثي الأبعاد جاهز.";
   status.classList.add("ok");
   function animate(){requestAnimationFrame(animate);model.rotation.y=Math.sin(performance.now()*0.00025)*0.035;renderer.render(scene,camera)}
