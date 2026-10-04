@@ -96,7 +96,7 @@ loader.load("../assets/mpfb.glb",g=>{
  const box=new THREE.Box3().setFromObject(model), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
  model.position.sub(center);
  const max=Math.max(size.x,size.y,size.z);
- const dist=max/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*1.65;
+ const dist=max/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))*1.65;
  camera.position.set(0,size.y*.08,dist); camera.lookAt(0,size.y*.08,0);
  s.textContent="3D Host متصل";
  s.classList.remove("error");
