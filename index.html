@@ -82,7 +82,8 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
   <div id="order-lines"></div>
   <button id="submit-order" class="primary">إرسال الطلب</button>
   <div id="order-status" class="answer"></div>
-</div>\n<div class="contact">
+</div>
+<div class="contact">
 <a id="wa" target="_blank" rel="noopener">WhatsApp</a><a id="call">اتصال</a><a id="email">البريد</a><a id="maps" target="_blank" rel="noopener">الاتجاهات</a>
 </div>
 <div class="note">هذا هو مسار 3D الأساسي المستقل. بعد إثبات ظهور النموذج، نضيف طبقة الكلام وحركة الشفاه فوق نفس المضيف.</div>
@@ -193,7 +194,8 @@ document.getElementById("submit-order")?.addEventListener("click",async()=>{
     status.textContent="تعذر تأكيد الطلب. لم يتم تسجيله كطلب مؤكد.";
   }
 });
-\nconst Q=[
+
+const Q=[
 ["الخدمات","PASTEL يقدم الفطور والغداء والعشاء والبرانش والمشروبات."],
 ["الحلويات","لدينا pâtisseries وviennoiseries وmillefeuille وalmond croissant وpistachio trompe-l’œil وblondie وmacarons والتارت والحلويات الفردية والكيك."],
 ["المشروبات","لدينا القهوة والشاي المنزلي والـsmoothies والمشروبات المميزة."],
@@ -208,7 +210,20 @@ document.getElementById("speak").onclick=()=>last&&speak(last);document.getEleme
 document.getElementById("wa").href="https://wa.me/213541332877";document.getElementById("call").href="tel:+213541332877";document.getElementById("email").href="mailto:sarl.pastel.pastry@gmail.com";document.getElementById("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Résidence El Chourouk, Akid Lotfi, Oran 31000, Algeria");
 </script>
 <script>
-const addOrderItem=document.getElementById("add-order-item");\naddOrderItem?.addEventListener("click",()=>{\n  const name=document.getElementById("order-item-name")?.value.trim();\n  const quantity=Math.max(1,Number.parseInt(document.getElementById("order-item-qty")?.value||"1",10)||1);\n  const status=document.getElementById("order-status");\n  if(!name){status.textContent="اكتب اسم العنصر أولاً.";return}\n  const item=orderState.items.find(x=>x.name===name);\n  if(item)item.quantity+=quantity; else orderState.items.push({name,quantity});\n  document.getElementById("order-item-name").value="";\n  document.getElementById("order-item-qty").value="1";\n  status.textContent="تمت إضافة العنصر إلى الطلب.";\n  renderOrder();\n});\nconst addOrderItem=document.getElementById("add-order-item");\naddOrderItem?.addEventListener("click",()=>{\n  const name=document.getElementById("order-item-name")?.value.trim();\n  const quantity=Math.max(1,Number.parseInt(document.getElementById("order-item-qty")?.value||"1",10)||1);\n  const status=document.getElementById("order-status");\n  if(!name){status.textContent="اكتب اسم العنصر أولاً.";return}\n  const item=orderState.items.find(x=>x.name===name);\n  if(item)item.quantity+=quantity; else orderState.items.push({name,quantity});\n  document.getElementById("order-item-name").value="";\n  document.getElementById("order-item-qty").value="1";\n  status.textContent="تمت إضافة العنصر إلى الطلب.";\n  renderOrder();\n});\nconst entry=document.getElementById("cinematic-entry");
+const addOrderItem=document.getElementById("add-order-item");
+addOrderItem?.addEventListener("click",()=>{
+  const name=document.getElementById("order-item-name")?.value.trim();
+  const quantity=Math.max(1,Number.parseInt(document.getElementById("order-item-qty")?.value||"1",10)||1);
+  const status=document.getElementById("order-status");
+  if(!name){status.textContent="اكتب اسم العنصر أولاً.";return}
+  const item=orderState.items.find(x=>x.name===name);
+  if(item)item.quantity+=quantity; else orderState.items.push({name,quantity});
+  document.getElementById("order-item-name").value="";
+  document.getElementById("order-item-qty").value="1";
+  status.textContent="تمت إضافة العنصر إلى الطلب.";
+  renderOrder();
+});
+const entry=document.getElementById("cinematic-entry");
 const enter=document.getElementById("enter-experience");
 function closeEntry(){entry?.classList.add("exit");setTimeout(()=>entry?.remove(),900);}
 enter?.addEventListener("click",closeEntry);
@@ -217,7 +232,8 @@ setTimeout(closeEntry,4200);
 <script>
 document.querySelectorAll(".floating-actions button").forEach(btn=>btn.addEventListener("click",()=>{
   const map={ask:"الخدمات",menu:"الحلويات",reserve:"التواصل",location:"الموقع"};
-  if(btn.dataset.action==="order"){openOrder();return}\n  const target=[...document.querySelectorAll("#questions button")].find(b=>b.textContent===map[btn.dataset.action]);
+  if(btn.dataset.action==="order"){openOrder();return}
+  const target=[...document.querySelectorAll("#questions button")].find(b=>b.textContent===map[btn.dataset.action]);
   target?.click();
   document.querySelector(".chat")?.scrollIntoView({behavior:"smooth",block:"center"});
 }));
