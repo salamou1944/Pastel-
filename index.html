@@ -76,7 +76,13 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 <div id="questions" class="questions"></div>
 <div id="answer" class="answer">اختر سؤالاً لأجيبك.</div>
 <div class="actions"><button id="speak" class="primary">استمع للإجابة</button><button id="stop">إيقاف الصوت</button></div>
-<div class="contact">
+<div id="order-panel" class="order-panel" hidden>
+  <div class="eyebrow">PASTEL ORDER</div>
+  <h2>طلبك</h2>
+  <div id="order-lines"></div>
+  <button id="submit-order" class="primary">إرسال الطلب</button>
+  <div id="order-status" class="answer"></div>
+</div>\n<div class="contact">
 <a id="wa" target="_blank" rel="noopener">WhatsApp</a><a id="call">اتصال</a><a id="email">البريد</a><a id="maps" target="_blank" rel="noopener">الاتجاهات</a>
 </div>
 <div class="note">هذا هو مسار 3D الأساسي المستقل. بعد إثبات ظهور النموذج، نضيف طبقة الكلام وحركة الشفاه فوق نفس المضيف.</div>
@@ -156,7 +162,28 @@ loader.setMeshoptDecoder(MeshoptDecoder);
 
 });
 
-const Q=[
+const orderState={items:[]};
+function renderOrder(){
+  const box=document.getElementById("order-lines");
+  if(!box)return;
+  box.innerHTML=orderState.items.length
+    ? orderState.items.map((x,i)=>'<div class="order-line"><span>'+escapeHtml(x.name)+'</span><strong>'+x.quantity+'</strong></div>').join("")
+    : '<div class="note">لم تتم إضافة عناصر بعد.</div>';
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function openOrder(name,quantity=1){
+  const item=orderState.items.find(x=>x.name===name);
+  if(item)item.quantity+=quantity; else orderState.items.push({name,quantity});
+  document.getElementById("order-panel").hidden=false;
+  renderOrder();
+  document.getElementById("order-panel").scrollIntoView({behavior:"smooth",block:"center"});
+}
+document.getElementById("submit-order")?.addEventListener("click",()=>{
+  const status=document.getElementById("order-status");
+  if(!orderState.items.length){status.textContent="أضف عنصراً قبل إرسال الطلب.";return}
+  status.textContent="لم يتم ربط PASTEL بواجهة طلب إنتاجية بعد؛ لن نعرض تأكيداً وهمياً. تواصل معنا لإتمام الطلب.";
+});
+\nconst Q=[
 ["الخدمات","PASTEL يقدم الفطور والغداء والعشاء والبرانش والمشروبات."],
 ["الحلويات","لدينا pâtisseries وviennoiseries وmillefeuille وalmond croissant وpistachio trompe-l’œil وblondie وmacarons والتارت والحلويات الفردية والكيك."],
 ["المشروبات","لدينا القهوة والشاي المنزلي والـsmoothies والمشروبات المميزة."],
