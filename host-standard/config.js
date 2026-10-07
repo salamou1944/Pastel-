@@ -86,7 +86,7 @@ window.HOST_CONFIG = {
     }
   ],
 
-  // Optional future server TTS. Leave disabled for a $0 static deployment.
+  order: {\n    apiEndpoint: "",\n    customerRequired: false\n  },\n\n  reservation: {\n    apiEndpoint: "",\n    enabled: false\n  },\n\n  // Optional future server TTS. Leave disabled for a $0 static deployment.
   // When a customer has an approved TTS endpoint, configure it here and
   // connect it to the TalkingHead speakAudio/speakText adapter.
   tts: {
