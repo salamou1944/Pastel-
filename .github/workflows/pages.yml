@@ -1,4 +1,5 @@
 name: Deploy Pastel to GitHub Pages
+# Production trigger: keep Pages deployment tied to main changes.
 on:
   push:
     branches: [main]
