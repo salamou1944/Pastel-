@@ -30,6 +30,9 @@ jobs:
             https://raw.githubusercontent.com/nirholas/three.ws/238ef6089554773f3485e13b8e463670ab5988d8/public/avatars/realistic-male.glb
           test -s assets/pastel-host.glb
           file assets/pastel-host.glb
+      - name: Verify Host GLB structure
+        run: |
+          node -e "const fs=require('fs');const b=fs.readFileSync('assets/pastel-host.glb');if(b.readUInt32LE(0)!==0x46546c67)throw Error('invalid GLB');const j=JSON.parse(b.subarray(20,20+b.readUInt32LE(12)).toString().trim());const nodes=(j.nodes||[]).map(x=>x.name||'');const skins=j.skins||[];const anim=(j.animations||[]).map(x=>x.name||'');const head=nodes.find(n=>/head/i.test(n)&&!/head(?:top|end|tip)$/i.test(n));if(!skins.length||!head)throw Error('missing skeleton/head');console.log(JSON.stringify({skins:skins.length,bones:skins.reduce((n,s)=>n+(s.joints||[]).length,0),headBone:head,animations:anim},null,2));"
       - uses: actions/upload-pages-artifact@v4
         with:
           path: .
