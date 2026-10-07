@@ -78,13 +78,13 @@ jobs:
             samples: window.__PASTEL_HOST_LIPSYNC_SAMPLES__ || []
           }));
           if (!tts.length) throw new Error("TTS endpoint was not requested");
-          if (!runtime.verify.audioLipsync?.analyser) throw new Error("audio analyser never connected");
+          if (!runtime.audio?.analyser) throw new Error("audio analyser never connected");
           const nonzero = runtime.samples.some(s => (s.values?.length||0) + (s.jaw?.length||0) > 0);
           if (!nonzero) throw new Error("no observed non-zero lip/jaw morph during real audio");
           console.log(JSON.stringify({
             url,
             ttsRequests: tts.length,
-            analyserConnected: runtime.verify.audioLipsync.analyser,
+            analyserConnected: runtime.audio.analyser,
             audioMode: runtime.verify.audioLipsync.mode,
             sampleCount: runtime.samples.length,
             nonzero,
