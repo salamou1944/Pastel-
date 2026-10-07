@@ -153,10 +153,31 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   const idleClip=clips.find(c=>/idle|breath|stand|rest/i.test(c.name||"")) || clips[0];
   const idleAction=idleClip?mixer.clipAction(idleClip).reset().setLoop(THREE.LoopRepeat):null;
   if(idleAction)idleAction.play();
-  const nodClip=clips.find(c=>/nod/i.test(c.name||""));
-  const talkClip=clips.find(c=>/talk|speak|gesture|wave/i.test(c.name||""));
+  const nodClip=clips.find(c=>/nod|yes|agree/i.test(c.name||""));
+  const talkClip=clips.find(c=>/talk|speak/i.test(c.name||""));
+  const greetClip=clips.find(c=>/wave|greet|hello|welcome/i.test(c.name||""));
+  const thinkClip=clips.find(c=>/think|idle.*look|ponder/i.test(c.name||""));
   const nodAction=nodClip?mixer.clipAction(nodClip):null;
   const talkAction=talkClip?mixer.clipAction(talkClip):null;
+  const greetAction=greetClip?mixer.clipAction(greetClip):null;
+  const thinkAction=thinkClip?mixer.clipAction(thinkClip):null;
+  let activeGesture=null;
+  let hostIntent="idle";
+  function fadeAction(next,duration=.22){
+    if(next===activeGesture)return;
+    if(activeGesture)activeGesture.fadeOut(duration);
+    activeGesture=next||null;
+    if(activeGesture)activeGesture.reset().setLoop(THREE.LoopRepeat).fadeIn(duration).play();
+  }
+  function setHostIntent(intent){
+    hostIntent=intent;
+    if(intent==="speaking"&&talkAction){if(idleAction)idleAction.stop();fadeAction(talkAction)}
+    else if(intent==="thinking"&&thinkAction){if(idleAction)idleAction.stop();fadeAction(thinkAction)}
+    else if(intent==="greeting"&&greetAction){if(idleAction)idleAction.stop();fadeAction(greetAction)}
+    else {if(activeGesture)activeGesture.fadeOut(.22);activeGesture=null;if(idleAction&&!idleAction.isRunning())idleAction.reset().fadeIn(.22).play()}
+    if(window.__PASTEL_HOST_VERIFY__)window.__PASTEL_HOST_VERIFY__.intent=hostIntent;
+  }
+  window.__PASTEL_HOST_INTENT__={set:setHostIntent,get:()=>hostIntent};
   const blinkTargets=[];
   const ARKIT=["viseme_aa","viseme_CH","viseme_DD","viseme_E","viseme_FF","viseme_I","viseme_kk","viseme_nn","viseme_O","viseme_PP","viseme_RR","viseme_sil","viseme_SS","viseme_TH","viseme_U"];
   const V={a:"viseme_aa",e:"viseme_E",i:"viseme_I",o:"viseme_O",u:"viseme_U",b:"viseme_PP",m:"viseme_PP",p:"viseme_PP",f:"viseme_FF",v:"viseme_FF",d:"viseme_DD",t:"viseme_DD",n:"viseme_DD",l:"viseme_DD",k:"viseme_kk",g:"viseme_kk",c:"viseme_kk",q:"viseme_kk",s:"viseme_SS",z:"viseme_SS",x:"viseme_SS",r:"viseme_RR",w:"viseme_U",y:"viseme_I",h:"viseme_E",j:"viseme_CH",ا:"viseme_aa",أ:"viseme_aa",إ:"viseme_aa",آ:"viseme_aa",و:"viseme_U",ي:"viseme_I",ب:"viseme_PP",م:"viseme_PP",ف:"viseme_FF",ث:"viseme_TH",ذ:"viseme_TH",ت:"viseme_DD",د:"viseme_DD",ن:"viseme_DD",ل:"viseme_DD",ك:"viseme_kk",ق:"viseme_kk",ج:"viseme_CH",ش:"viseme_CH",س:"viseme_SS",ص:"viseme_SS",ز:"viseme_SS",ر:"viseme_RR",ه:"viseme_E",ح:"viseme_E",خ:"viseme_CH",ع:"viseme_aa",غ:"viseme_RR"};
@@ -224,6 +245,9 @@ loader.setMeshoptDecoder(MeshoptDecoder);
         this.connected=true;
         this.source=el.currentSrc||el.src||"media-element";
         this.analyser=true;
+        if(window.__PASTEL_HOST_VERIFY__){
+          window.__PASTEL_HOST_VERIFY__.audioLipsync={mode:this.mode,connected:this.connected,analyser:this.analyser,source:this.source,preciseTimelineReady:true};
+        }
         return true;
       }catch(err){
         console.warn("[PASTEL AUDIO LIPSYNC] connect failed",err);
@@ -237,6 +261,9 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       try{audioAnalyser?.disconnect()}catch{}
       audioSource=null;audioAnalyser=null;audioData=null;audioElement=null;
       this.connected=false;this.analyser=false;this.source=null;
+      if(window.__PASTEL_HOST_VERIFY__){
+        window.__PASTEL_HOST_VERIFY__.audioLipsync={mode:this.mode,connected:false,analyser:false,source:null,preciseTimelineReady:true};
+      }
       if(this.mode==="audio-frequency")this.mode="unavailable";
     },
     tick(){
@@ -300,8 +327,9 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       stop(){
         if(lipsyncMode==="viseme")for(const items of morph.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
         if(lipsyncMode==="jaw")for(const items of jaw.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
-        if(talkAction){talkAction.stop();speaking=false}
-        if(idleAction&&!idleAction.isRunning())idleAction.reset().play();
+        if(talkAction)talkAction.stop();
+        speaking=false;
+        setHostIntent("idle");
       }
     };
   }
@@ -313,7 +341,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       const next=makeVisemeTimeline(timeline);
       if(!next)return false;
       lipsync=next;
-      if(talkAction){if(idleAction)idleAction.stop();talkAction.reset().setLoop(THREE.LoopRepeat).play();speaking=true}
+      if(talkAction){setHostIntent("speaking");speaking=true}
       return true;
     },
     useAudioElement(el){
@@ -374,6 +402,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   status.classList.add("ok");
   const hostVerification={
     model:MODEL,
+    intent:"idle",
     audioLipsync:{
       mode:audioLipsync.mode,
       connected:audioLipsync.connected,
@@ -430,6 +459,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
         nodAction.play();
       }
     }
+    if(!speaking&&hostIntent!=="idle"&&hostIntent!=="thinking")setHostIntent("idle");
     const blink=blinkUntil>now?1:0;
     for(const [mesh,index] of blinkTargets) mesh.morphTargetInfluences[index]=blink;
     renderer.render(scene,camera);
@@ -486,7 +516,7 @@ const Q=[
 ["الأسعار","الأسعار الكاملة غير مثبتة في قاعدة المعرفة الحالية، لذلك لن أخمّنها."]
 ];
 let last="";
-for(const [label,text] of Q){const b=document.createElement("button");b.textContent=label;b.onclick=()=>{last=text;document.getElementById("answer").textContent=text;speak(text)};document.getElementById("questions").appendChild(b)}
+for(const [label,text] of Q){const b=document.createElement("button");b.textContent=label;b.onclick=()=>{last=text;document.getElementById("answer").textContent=text;setHostIntent?.("thinking");setTimeout(()=>speak(text),180)};document.getElementById("questions").appendChild(b)}
 async function speak(text){
   const cfg=window.HOST_CONFIG?.tts;
   if(cfg?.enabled&&cfg.endpoint){
@@ -500,6 +530,7 @@ async function speak(text){
       audio.onended=()=>lipsync.stop();
       audio.onerror=()=>lipsync.stop();
       if(window.PASTEL_HOST_LIPSYNC?.useAudioElement(audio)){
+            setHostIntent("speaking");
         nodTimer=performance.now()+420;
         await audio.play();
         return;
@@ -519,7 +550,7 @@ async function speak(text){
   u.lang=window.HOST_CONFIG?.language?.speech||"ar-DZ";u.rate=window.HOST_CONFIG?.language?.rate||.88;u.pitch=window.HOST_CONFIG?.language?.pitch||1;
   u.onend=()=>lipsync.stop();u.onerror=()=>lipsync.stop();speechSynthesis.speak(u)
 }
-document.getElementById("speak").onclick=()=>last&&speak(last);document.getElementById("stop").onclick=()=>{speechSynthesis?.cancel();lipsync.stop();nodTimer=0};
+document.getElementById("speak").onclick=()=>last&&speak(last);document.getElementById("stop").onclick=()=>{speechSynthesis?.cancel();lipsync.stop();nodTimer=0;setHostIntent?.("idle")};
 document.getElementById("wa").href="https://wa.me/213541332877";document.getElementById("call").href="tel:+213541332877";document.getElementById("email").href="mailto:sarl.pastel.pastry@gmail.com";document.getElementById("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Résidence El Chourouk, Akid Lotfi, Oran 31000, Algeria");
 </script>
 <script>
