@@ -47,15 +47,6 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
   <div class="pastel-door door-left"><span>PASTEL</span></div>
   <div class="pastel-door door-right"><span>PASTEL</span></div>
   <div class="entry-light"></div>
-  <div class="entry-host">
-    <div class="host-glow"></div>
-    <div class="host-silhouette" aria-hidden="true"></div>
-    <div class="entry-copy">
-      <small>PASTEL PASTRY&COFFEE</small>
-      <strong>مرحباً بك</strong>
-      <span>جاري فتح تجربتك...</span>
-    </div>
-  </div>
   <button id="enter-experience" type="button">الدخول إلى PASTEL</button>
 </div>
 <div class="shell">
@@ -137,5 +128,12 @@ for(const [label,text] of Q){const b=document.createElement("button");b.textCont
 function speak(text){if(!("speechSynthesis"in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="ar-DZ";u.rate=.88;speechSynthesis.speak(u)}
 document.getElementById("speak").onclick=()=>last&&speak(last);document.getElementById("stop").onclick=()=>speechSynthesis?.cancel();
 document.getElementById("wa").href="https://wa.me/213541332877";document.getElementById("call").href="tel:+213541332877";document.getElementById("email").href="mailto:sarl.pastel.pastry@gmail.com";document.getElementById("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Résidence El Chourouk, Akid Lotfi, Oran 31000, Algeria");
+</script>
+<script>
+const entry=document.getElementById("cinematic-entry");
+const enter=document.getElementById("enter-experience");
+function closeEntry(){entry?.classList.add("exit");setTimeout(()=>entry?.remove(),900);}
+enter?.addEventListener("click",closeEntry);
+setTimeout(closeEntry,4200);
 </script>
 </body></html>
