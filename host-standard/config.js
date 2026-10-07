@@ -15,13 +15,13 @@ window.HOST_CONFIG = {
   },
 
   host: {
-    modelUrl: "https://three.ws/avatars/realistic-male.glb",
+    modelUrl: "./assets/pastel-host.glb",
     fallbackModelUrls: [],
     dracoEnabled: false,
     body: "M",
     mood: "neutral",
     view: "upper",
-    source: "three.ws realistic-male GLB candidate; provenance/licence must remain verified before commercial redistribution"
+    source: "three.ws realistic-male GLB candidate vendored at build time for functional validation; commercial provenance/licence still requires verification before paid customer redistribution"
   },
 
   language: {
