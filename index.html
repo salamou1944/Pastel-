@@ -178,10 +178,20 @@ function openOrder(name,quantity=1){
   renderOrder();
   document.getElementById("order-panel").scrollIntoView({behavior:"smooth",block:"center"});
 }
-document.getElementById("submit-order")?.addEventListener("click",()=>{
+document.getElementById("submit-order")?.addEventListener("click",async()=>{
   const status=document.getElementById("order-status");
   if(!orderState.items.length){status.textContent="أضف عنصراً قبل إرسال الطلب.";return}
-  status.textContent="لم يتم ربط PASTEL بواجهة طلب إنتاجية بعد؛ لن نعرض تأكيداً وهمياً. تواصل معنا لإتمام الطلب.";
+  const endpoint=window.HOST_CONFIG?.order?.apiEndpoint;
+  if(!endpoint){status.textContent="الطلب جاهز للإرسال، لكن واجهة الطلب الإنتاجية غير مربوطة بعد. لن نعرض تأكيداً وهمياً.";return}
+  status.textContent="جارٍ إرسال الطلب…";
+  try{
+    const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:orderState.items,createdAt:new Date().toISOString()})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||!data.orderId)throw new Error("order_not_confirmed");
+    status.textContent="تم تأكيد الطلب رقم "+data.orderId;
+  }catch(error){
+    status.textContent="تعذر تأكيد الطلب. لم يتم تسجيله كطلب مؤكد.";
+  }
 });
 \nconst Q=[
 ["الخدمات","PASTEL يقدم الفطور والغداء والعشاء والبرانش والمشروبات."],
@@ -206,8 +216,8 @@ setTimeout(closeEntry,4200);
 </script>
 <script>
 document.querySelectorAll(".floating-actions button").forEach(btn=>btn.addEventListener("click",()=>{
-  const map={ask:"الخدمات",menu:"الحلويات",order:"المشروبات",reserve:"التواصل",location:"الموقع"};
-  const target=[...document.querySelectorAll("#questions button")].find(b=>b.textContent===map[btn.dataset.action]);
+  const map={ask:"الخدمات",menu:"الحلويات",reserve:"التواصل",location:"الموقع"};
+  if(btn.dataset.action==="order"){openOrder("المشروبات",1);document.querySelector("#order-panel")?.scrollIntoView({behavior:"smooth",block:"center"});return}\n  const target=[...document.querySelectorAll("#questions button")].find(b=>b.textContent===map[btn.dataset.action]);
   target?.click();
   document.querySelector(".chat")?.scrollIntoView({behavior:"smooth",block:"center"});
 }));
