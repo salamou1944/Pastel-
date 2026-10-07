@@ -61,7 +61,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 </div>
 <div class="shell">
 <section class="card host">
-<div class="badge">PASTEL HOST · 3D</div>
+<div class="badge">PASTEL HOST · REALISTIC 3D</div>
 <div id="avatar"></div>
 <div class="floating-actions" aria-label="PASTEL actions">
   <button data-action="ask">اسأل Host</button>
@@ -95,7 +95,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 <div class="contact">
 <a id="wa" target="_blank" rel="noopener">WhatsApp</a><a id="call">اتصال</a><a id="email">البريد</a><a id="maps" target="_blank" rel="noopener">الاتجاهات</a>
 </div>
-<div class="note">هذا هو مسار 3D الأساسي المستقل. بعد إثبات ظهور النموذج، نضيف طبقة الكلام وحركة الشفاه فوق نفس المضيف.</div>
+<div class="note">المضيف المرئي هنا يجب أن يكون إنساناً واقعياً. الكلام وحركة الشفاه المتزامنة مع العربية ستُربطان فوق نفس النموذج بعد اجتياز فحص الشكل والترخيص.</div>
 </section>
 </div>
 <script src="./host-standard/config.js"></script>
@@ -104,7 +104,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.m
 import {GLTFLoader} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js/+esm";
 import {MeshoptDecoder} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/libs/meshopt_decoder.module.js/+esm";
 
-const MODEL="./assets/mpfb.glb";
+const MODEL=window.HOST_CONFIG?.host?.modelUrl || "./assets/mpfb.glb";
 const status=document.getElementById("status"), mount=document.getElementById("avatar");
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(30,1,.01,1000);
