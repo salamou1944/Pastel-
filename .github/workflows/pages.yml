@@ -53,7 +53,7 @@ jobs:
           const browser = await chromium.launch({headless:true});
           const page = await browser.newPage();
           const tts = [];
-          page.on("request", req => {
+          const pageErrors = [];\n          page.on("pageerror", err => pageErrors.push(String(err?.message || err)));\n          page.on("console", msg => { if (msg.type() === "error") pageErrors.push(msg.text()); });\n          page.on("request", req => {
             if (req.url().includes("/functions/v1/pastel-tts-v2")) tts.push(req);
           });
           await page.goto(url, {waitUntil:"networkidle", timeout:60000});
