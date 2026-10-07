@@ -18,12 +18,54 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 .questions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:20px 0}button{font:inherit;border:1px solid #fff2;background:#fff0;color:#fff;border-radius:14px;padding:12px;cursor:pointer}button:hover{background:#ffffff0d}.primary{background:linear-gradient(135deg,#f0d7b0,#d8b783);color:#18110d;border:0;font-weight:800}.answer{min-height:110px;border-radius:17px;background:#080706cc;border:1px solid #fff1;padding:16px;line-height:1.8}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.contact{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px}.contact a{text-align:center;text-decoration:none;color:#fff;border:1px solid #fff1;border-radius:11px;padding:9px 4px;font-size:11px}.note{font-size:10px;color:#9e938a;margin-top:15px;line-height:1.6}
 @media(max-width:820px){.shell{grid-template-columns:1fr;padding:8px}.host{min-height:58vh;height:58vh}.chat{align-self:auto}.questions{grid-template-columns:1fr 1fr}#avatar{min-height:0}}
 </style>
-</head>
+<style>
+/* PASTEL cinematic QR entrance */
+#cinematic-entry{position:fixed;inset:0;z-index:1000;overflow:hidden;background:#090706;color:#fff;display:grid;place-items:center;isolation:isolate;transition:opacity .8s ease,visibility .8s ease}
+#cinematic-entry.exit{opacity:0;visibility:hidden;pointer-events:none}
+.entry-backdrop{position:absolute;inset:-5%;background:radial-gradient(circle at 50% 42%,#6d4933 0,#251914 28%,#090706 68%);filter:blur(1px);transform:scale(1.04)}
+.entry-light{position:absolute;width:42vw;height:80vh;min-width:280px;max-width:620px;top:14%;background:radial-gradient(ellipse at center,#ffe4bdcc 0,#d19b6755 23%,transparent 68%);filter:blur(10px);opacity:0;animation:entryLight 2.4s 1.05s forwards}
+.pastel-door{position:absolute;z-index:3;top:0;height:100%;width:50.5%;background:linear-gradient(100deg,#120d0a,#241610 58%,#4a2e20);box-shadow:inset 0 0 70px #0009;border-right:1px solid #e7c99d33;display:flex;align-items:center;color:#e7c99d;letter-spacing:.45em;font-family:Georgia,serif;font-size:clamp(20px,3vw,42px);font-weight:500;transition:transform 1.9s cubic-bezier(.77,0,.18,1)}
+.door-left{left:0;justify-content:flex-end;padding-right:5vw;transform-origin:left center;animation:doorLeft 2s 1s cubic-bezier(.77,0,.18,1) forwards}
+.door-right{right:0;justify-content:flex-start;padding-left:5vw;border-right:0;border-left:1px solid #e7c99d33;transform-origin:right center;animation:doorRight 2s 1s cubic-bezier(.77,0,.18,1) forwards}
+.entry-host{position:absolute;z-index:2;width:min(38vw,430px);height:min(70vh,650px);min-width:260px;top:14%;display:grid;place-items:center;opacity:0;animation:hostReveal 1.2s 1.65s forwards}
+.host-glow{position:absolute;inset:8% 5%;border-radius:50%;background:radial-gradient(ellipse,#e7c99d44,transparent 65%);filter:blur(18px)}
+.host-silhouette{position:absolute;width:54%;height:72%;top:13%;border-radius:48% 48% 20% 20%;background:linear-gradient(180deg,#b58a6a,#493025 36%,#18110e 78%);filter:blur(3px);box-shadow:0 20px 80px #000b}
+.entry-copy{position:absolute;bottom:2%;text-align:center;display:grid;gap:7px;direction:rtl;text-shadow:0 4px 25px #000}
+.entry-copy small{font-size:9px;letter-spacing:.25em;color:#d8bb99}
+.entry-copy strong{font:500 clamp(28px,4vw,52px)/1.05 Georgia,serif}
+.entry-copy span{font-size:11px;color:#cbb9ab}
+#enter-experience{position:absolute;z-index:5;bottom:7%;border:1px solid #e8c99f55;background:#0b0908b8;color:#f8eee4;border-radius:999px;padding:13px 23px;backdrop-filter:blur(15px);opacity:0;animation:buttonReveal .7s 2.55s forwards;cursor:pointer;font:inherit}
+#enter-experience:hover{background:#e8c99f;color:#17100c}
+@keyframes doorLeft{to{transform:translateX(-94%) rotateY(-5deg)}} @keyframes doorRight{to{transform:translateX(94%) rotateY(5deg)}}
+@keyframes entryLight{to{opacity:1;transform:scale(1.12)}} @keyframes hostReveal{to{opacity:1;transform:translateY(-1vh) scale(1.01)}} @keyframes buttonReveal{to{opacity:1}}
+@media(max-width:600px){.entry-host{width:72vw;height:68vh;top:12%}.pastel-door{font-size:19px}.entry-copy strong{font-size:32px}.entry-copy span{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.pastel-door,.entry-light,.entry-host,#enter-experience{animation:none}.pastel-door{transform:none}.entry-light,.entry-host,#enter-experience{opacity:1}}
+</style><style>
+.floating-actions{position:absolute;z-index:6;inset:0;pointer-events:none}
+.floating-actions button{position:absolute;pointer-events:auto;border:1px solid rgba(232,201,159,.34);background:rgba(12,9,7,.55);color:#f8eee4;border-radius:999px;padding:11px 15px;backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,.28);font-size:12px;transition:transform .2s ease,background .2s ease,border-color .2s ease}
+.floating-actions button:hover{transform:translateY(-3px) scale(1.03);background:rgba(232,201,159,.16);border-color:rgba(232,201,159,.7)}
+.floating-actions button:nth-child(1){top:27%;left:7%}.floating-actions button:nth-child(2){top:43%;left:4%}.floating-actions button:nth-child(3){top:59%;left:8%}.floating-actions button:nth-child(4){top:35%;right:7%}.floating-actions button:nth-child(5){top:56%;right:5%}
+@media(max-width:820px){.floating-actions button{padding:9px 12px;font-size:11px}.floating-actions button:nth-child(1){top:25%;left:4%}.floating-actions button:nth-child(2){top:40%;left:2%}.floating-actions button:nth-child(3){top:58%;left:4%}.floating-actions button:nth-child(4){top:34%;right:3%}.floating-actions button:nth-child(5){top:55%;right:2%}}
+</style></head>
 <body>
+<div id="cinematic-entry" aria-label="PASTEL entrance">
+  <div class="entry-backdrop"></div>
+  <div class="pastel-door door-left"><span>PASTEL</span></div>
+  <div class="pastel-door door-right"><span>PASTEL</span></div>
+  <div class="entry-light"></div>
+  <button id="enter-experience" type="button">الدخول إلى PASTEL</button>
+</div>
 <div class="shell">
 <section class="card host">
 <div class="badge">PASTEL HOST · 3D</div>
 <div id="avatar"></div>
+<div class="floating-actions" aria-label="PASTEL actions">
+  <button data-action="ask">اسأل Host</button>
+  <button data-action="menu">القائمة</button>
+  <button data-action="order">اطلب</button>
+  <button data-action="reserve">احجز</button>
+  <button data-action="location">المكان</button>
+</div>
 <div id="status" class="status">جاري تحميل المضيف ثلاثي الأبعاد…</div>
 </section>
 <section class="card chat">
@@ -34,6 +76,13 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 <div id="questions" class="questions"></div>
 <div id="answer" class="answer">اختر سؤالاً لأجيبك.</div>
 <div class="actions"><button id="speak" class="primary">استمع للإجابة</button><button id="stop">إيقاف الصوت</button></div>
+<div id="order-panel" class="order-panel" hidden>
+  <div class="eyebrow">PASTEL ORDER</div>
+  <h2>طلبك</h2>
+  <div id="order-lines"></div>
+  <button id="submit-order" class="primary">إرسال الطلب</button>
+  <div id="order-status" class="answer"></div>
+</div>
 <div class="contact">
 <a id="wa" target="_blank" rel="noopener">WhatsApp</a><a id="call">اتصال</a><a id="email">البريد</a><a id="maps" target="_blank" rel="noopener">الاتجاهات</a>
 </div>
@@ -64,19 +113,44 @@ addEventListener("resize",resize); resize();
 
 const loader=new GLTFLoader();
 loader.setMeshoptDecoder(MeshoptDecoder);
-loader.load(MODEL,g=>{
+
+  loader.load(MODEL,g=>{
   const model=g.scene;
   scene.add(model);
   const box=new THREE.Box3().setFromObject(model), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
   model.position.sub(center);
+  const baseY=model.position.y;
   const max=Math.max(size.x,size.y,size.z);
   const dist=max/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))*1.65;
   camera.position.set(0,0,dist);
-  // Wider framing: show the complete available avatar instead of a tight bust crop.
   camera.lookAt(0,0,0);
-  status.textContent="المضيف ثلاثي الأبعاد جاهز.";
+
+  // Keep the host alive even before a full speech/lipsync provider is attached:
+  // idle animation + subtle breathing + generic blink morph detection.
+  const clock=new THREE.Clock();
+  const mixer=new THREE.AnimationMixer(model);
+  for(const clip of g.animations||[]) mixer.clipAction(clip).play();
+  const blinkTargets=[];
+  model.traverse(o=>{
+    if(!o.morphTargetDictionary||!o.morphTargetInfluences)return;
+    for(const [name,index] of Object.entries(o.morphTargetDictionary)){
+      if(/blink|eye.*close|eyes.*close/i.test(name)) blinkTargets.push([o,index]);
+    }
+  });
+  let nextBlink=performance.now()+1800+Math.random()*2200, blinkUntil=0;
+  status.textContent="المضيف جاهز.";
   status.classList.add("ok");
-  function animate(){requestAnimationFrame(animate);model.rotation.y=Math.sin(performance.now()*0.00025)*0.035;renderer.render(scene,camera)}
+  function animate(){
+    requestAnimationFrame(animate);
+    const now=performance.now(), dt=clock.getDelta();
+    mixer.update(dt);
+    model.rotation.y=Math.sin(now*0.00025)*0.025;
+    model.position.y=baseY+Math.sin(now*0.00115)*0.006;
+    if(now>=nextBlink){blinkUntil=now+130;nextBlink=now+1800+Math.random()*2800}
+    const blink=blinkUntil>now?1:0;
+    for(const [mesh,index] of blinkTargets) mesh.morphTargetInfluences[index]=blink;
+    renderer.render(scene,camera);
+  }
   animate();
 },ev=>{
   if(ev.total) status.textContent="جاري تحميل المضيف… "+Math.round(ev.loaded/ev.total*100)+"%";
@@ -84,6 +158,41 @@ loader.load(MODEL,g=>{
   console.error(err);
   status.textContent="تعذر تشغيل المضيف ثلاثي الأبعاد. الحوار ما زال يعمل.";
   status.classList.add("error");
+});
+}
+
+});
+
+const orderState={items:[]};
+function renderOrder(){
+  const box=document.getElementById("order-lines");
+  if(!box)return;
+  box.innerHTML=orderState.items.length
+    ? orderState.items.map((x,i)=>'<div class="order-line"><span>'+escapeHtml(x.name)+'</span><strong>'+x.quantity+'</strong></div>').join("")
+    : '<div class="note">لم تتم إضافة عناصر بعد.</div>';
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function openOrder(name,quantity=1){
+  const item=orderState.items.find(x=>x.name===name);
+  if(item)item.quantity+=quantity; else orderState.items.push({name,quantity});
+  document.getElementById("order-panel").hidden=false;
+  renderOrder();
+  document.getElementById("order-panel").scrollIntoView({behavior:"smooth",block:"center"});
+}
+document.getElementById("submit-order")?.addEventListener("click",async()=>{
+  const status=document.getElementById("order-status");
+  if(!orderState.items.length){status.textContent="أضف عنصراً قبل إرسال الطلب.";return}
+  const endpoint=window.HOST_CONFIG?.order?.apiEndpoint;
+  if(!endpoint){status.textContent="الطلب جاهز للإرسال، لكن واجهة الطلب الإنتاجية غير مربوطة بعد. لن نعرض تأكيداً وهمياً.";return}
+  status.textContent="جارٍ إرسال الطلب…";
+  try{
+    const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:orderState.items,createdAt:new Date().toISOString()})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||!data.orderId)throw new Error("order_not_confirmed");
+    status.textContent="تم تأكيد الطلب رقم "+data.orderId;
+  }catch(error){
+    status.textContent="تعذر تأكيد الطلب. لم يتم تسجيله كطلب مؤكد.";
+  }
 });
 
 const Q=[
@@ -100,4 +209,32 @@ function speak(text){if(!("speechSynthesis"in window))return;speechSynthesis.can
 document.getElementById("speak").onclick=()=>last&&speak(last);document.getElementById("stop").onclick=()=>speechSynthesis?.cancel();
 document.getElementById("wa").href="https://wa.me/213541332877";document.getElementById("call").href="tel:+213541332877";document.getElementById("email").href="mailto:sarl.pastel.pastry@gmail.com";document.getElementById("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Résidence El Chourouk, Akid Lotfi, Oran 31000, Algeria");
 </script>
-</body></html>
+<script>
+const addOrderItem=document.getElementById("add-order-item");
+addOrderItem?.addEventListener("click",()=>{
+  const name=document.getElementById("order-item-name")?.value.trim();
+  const quantity=Math.max(1,Number.parseInt(document.getElementById("order-item-qty")?.value||"1",10)||1);
+  const status=document.getElementById("order-status");
+  if(!name){status.textContent="اكتب اسم العنصر أولاً.";return}
+  const item=orderState.items.find(x=>x.name===name);
+  if(item)item.quantity+=quantity; else orderState.items.push({name,quantity});
+  document.getElementById("order-item-name").value="";
+  document.getElementById("order-item-qty").value="1";
+  status.textContent="تمت إضافة العنصر إلى الطلب.";
+  renderOrder();
+});
+const entry=document.getElementById("cinematic-entry");
+const enter=document.getElementById("enter-experience");
+function closeEntry(){entry?.classList.add("exit");setTimeout(()=>entry?.remove(),900);}
+enter?.addEventListener("click",closeEntry);
+setTimeout(closeEntry,4200);
+</script>
+<script>
+document.querySelectorAll(".floating-actions button").forEach(btn=>btn.addEventListener("click",()=>{
+  const map={ask:"الخدمات",menu:"الحلويات",reserve:"التواصل",location:"الموقع"};
+  if(btn.dataset.action==="order"){openOrder();return}
+  const target=[...document.querySelectorAll("#questions button")].find(b=>b.textContent===map[btn.dataset.action]);
+  target?.click();
+  document.querySelector(".chat")?.scrollIntoView({behavior:"smooth",block:"center"});
+}));
+</script></body></html>

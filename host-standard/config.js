@@ -3,7 +3,8 @@ window.HOST_CONFIG = {
     name: "PASTEL PASTRY&COFFEE",
     badge: "PASTEL HOST · STANDARD 3D",
     eyebrow: "PASTEL PASTRY&COFFEE",
-    title: "مرحباً.\nأنا هنا لخدمتك.",
+    title: "مرحباً.
+أنا هنا لخدمتك.",
     subtitle: "اسألني عن الأشياء التي نملك معلومات موثقة عنها. إذا لم تكن المعلومة مثبتة، لن أخمّن."
   },
 
@@ -85,6 +86,16 @@ window.HOST_CONFIG = {
       answer: "الأسعار الكاملة غير مثبتة في قاعدة المعرفة الحالية، لذلك لن أخمّنها."
     }
   ],
+
+  order: {
+    apiEndpoint: "https://rdcodzowehzmwdxhztxe.supabase.co/functions/v1/pastel-order",
+    customerRequired: false
+  },
+
+  reservation: {
+    apiEndpoint: "",
+    enabled: false
+  },
 
   // Optional future server TTS. Leave disabled for a $0 static deployment.
   // When a customer has an approved TTS endpoint, configure it here and

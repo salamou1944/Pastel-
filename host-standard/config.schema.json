@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PASTEL Host Customer Configuration",
+  "type": "object",
+  "required": ["brand", "knowledge", "contacts"],
+  "properties": {
+    "brand": {"type": "object", "required": ["name"], "additionalProperties": true},
+    "knowledge": {"type": "object", "additionalProperties": true},
+    "contacts": {"type": "object", "additionalProperties": true}
+  },
+  "additionalProperties": true
+}
