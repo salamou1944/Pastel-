@@ -171,11 +171,17 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   // three.ws-compatible head-bone discovery: accept common humanoid naming
   // conventions (mixamorigHead, Armature:Head, rig_Head, CC_Base_Head, etc.)
   // while excluding terminal helper bones such as HeadTop/HeadEnd.
+  // Prefer the actual head bone; fall back to common head markers only
+  // when the rig does not expose a cleaner humanoid head name.
+  let fallbackHead=null;
   model.traverse(o=>{
-    if(headBone||!o.isBone)return;
+    if(!o.isBone)return;
     const n=String(o.name||"");
-    if(/head/i.test(n)&&!/head(?:top|end|tip)$/i.test(n))headBone=o;
+    if(!fallbackHead&&/head/i.test(n))fallbackHead=o;
+    if(headBone)return;
+    if(/(?:^|[:_])(?:head|cc_base_head|mixamorighead)$/i.test(n)||/^(head|headbone)$/i.test(n))headBone=o;
   });
+  if(!headBone)headBone=fallbackHead;
   let lookX=0,lookY=0,targetLookX=0,targetLookY=0;
   addEventListener("pointermove",e=>{
     targetLookX=((e.clientX/innerWidth)-0.5)*0.22;
