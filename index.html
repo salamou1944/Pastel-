@@ -423,7 +423,9 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     jawTargets:[...jaw.keys()],
     blinkTargets:blinkTargets.length
   };
-  window.__PASTEL_HOST_VERIFY__=hostVerification;\n  window.__PASTEL_HOST_VERIFY__.state="ready";\n  window.__PASTEL_HOST_LIPSYNC_SAMPLE__=()=>({
+  window.__PASTEL_HOST_VERIFY__=hostVerification;
+  window.__PASTEL_HOST_VERIFY__.state="ready";
+  window.__PASTEL_HOST_LIPSYNC_SAMPLE__=()=>({
     mode:lipsyncMode,
     audioConnected:!!audioLipsync.connected,
     active:!!audioLipsync.active,
