@@ -22,14 +22,14 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Fetch CC0 3D host asset
+      - name: Fetch photorealistic Host candidate
         run: |
           mkdir -p assets
           curl -L --fail --retry 3 --retry-delay 2 \
-            -o assets/mpfb.glb \
-            https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/mpfb.glb
-          test -s assets/mpfb.glb
-          file assets/mpfb.glb
+            -o assets/pastel-host.glb \
+            https://raw.githubusercontent.com/nirholas/three.ws/238ef6089554773f3485e13b8e463670ab5988d8/public/avatars/realistic-male.glb
+          test -s assets/pastel-host.glb
+          file assets/pastel-host.glb
       - uses: actions/upload-pages-artifact@v4
         with:
           path: .
