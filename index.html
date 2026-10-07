@@ -98,7 +98,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 <div class="note">المضيف المرئي هنا يجب أن يكون إنساناً واقعياً. الكلام وحركة الشفاه المتزامنة مع العربية ستُربطان فوق نفس النموذج بعد اجتياز فحص الشكل والترخيص.</div>
 </section>
 </div>
-<script src="./host-standard/config.js?v=20261007-host2"></script>
+<script src="./host-standard/config.js?v=20261007-tts1"></script>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm";
 import {GLTFLoader} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js/+esm";
@@ -474,17 +474,36 @@ const Q=[
 ];
 let last="";
 for(const [label,text] of Q){const b=document.createElement("button");b.textContent=label;b.onclick=()=>{last=text;document.getElementById("answer").textContent=text;speak(text)};document.getElementById("questions").appendChild(b)}
-function speak(text){
+async function speak(text){
+  const cfg=window.HOST_CONFIG?.tts;
+  if(cfg?.enabled&&cfg.endpoint){
+    speechSynthesis?.cancel();lipsync.stop();
+    try{
+      const response=await fetch(cfg.endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+      const data=await response.json();
+      if(!response.ok||!data?.ok||!data?.audioBase64)throw new Error("tts_not_confirmed");
+      const audio=new Audio("data:"+String(data.format||"audio/webm;codecs=opus")+";base64,"+data.audioBase64);
+      audio.preload="auto";
+      audio.onended=()=>lipsync.stop();
+      audio.onerror=()=>lipsync.stop();
+      if(window.PASTEL_HOST_LIPSYNC?.useAudioElement(audio)){
+        nodTimer=performance.now()+420;
+        await audio.play();
+        return;
+      }
+      throw new Error("audio_lipsync_unavailable");
+    }catch(error){
+      console.warn("[PASTEL TTS] remote audio failed; using browser speech fallback",error);
+    }
+  }
   if(!("speechSynthesis"in window))return;
-  // SpeechSynthesis is intentionally kept on the text-viseme fallback path.
-  // A real <audio> TTS clip can call window.PASTEL_AUDIO_LIPSYNC.connect(audio)
-  // and then use the same render loop for waveform-driven visemes.
+  // Deterministic fallback only. This is NOT presented as audio-driven lipsync.
   speechSynthesis.cancel();lipsync.stop();
   lipsync=makeLipsync(text);
   if(talkAction){if(idleAction)idleAction.stop();talkAction.reset().setLoop(THREE.LoopRepeat).play();speaking=true}
   nodTimer=performance.now()+420;
   const u=new SpeechSynthesisUtterance(text);
-  u.lang="ar-DZ";u.rate=window.HOST_CONFIG?.language?.rate||.88;u.pitch=window.HOST_CONFIG?.language?.pitch||1;
+  u.lang=window.HOST_CONFIG?.language?.speech||"ar-DZ";u.rate=window.HOST_CONFIG?.language?.rate||.88;u.pitch=window.HOST_CONFIG?.language?.pitch||1;
   u.onend=()=>lipsync.stop();u.onerror=()=>lipsync.stop();speechSynthesis.speak(u)
 }
 document.getElementById("speak").onclick=()=>last&&speak(last);document.getElementById("stop").onclick=()=>{speechSynthesis?.cancel();lipsync.stop();nodTimer=0};
