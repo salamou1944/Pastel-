@@ -1,7 +1,7 @@
 window.HOST_CONFIG = {
   brand: {
     name: "PASTEL PASTRY&COFFEE",
-    badge: "PASTEL HOST · STANDARD 3D",
+    badge: "PASTEL HOST · REALISTIC 3D",
     eyebrow: "PASTEL PASTRY&COFFEE",
     title: "مرحباً.
 أنا هنا لخدمتك.",
@@ -15,15 +15,13 @@ window.HOST_CONFIG = {
   },
 
   host: {
-    modelUrl: "../assets/mpfb.glb",
-    fallbackModelUrls: [
-      "https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/mpfb.glb"
-    ],
+    modelUrl: "https://three.ws/avatars/realistic-male.glb",
+    fallbackModelUrls: [],
     dracoEnabled: false,
     body: "M",
     mood: "neutral",
     view: "upper",
-    source: "TalkingHead MPFB reference avatar (CC0); replace with customer-approved commercial GLB"
+    source: "three.ws realistic-male GLB candidate; provenance/licence must remain verified before commercial redistribution"
   },
 
   language: {
@@ -97,9 +95,6 @@ window.HOST_CONFIG = {
     enabled: false
   },
 
-  // Optional future server TTS. Leave disabled for a $0 static deployment.
-  // When a customer has an approved TTS endpoint, configure it here and
-  // connect it to the TalkingHead speakAudio/speakText adapter.
   tts: {
     enabled: false,
     endpoint: ""
