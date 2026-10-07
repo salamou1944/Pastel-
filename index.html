@@ -424,6 +424,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     blinkTargets:blinkTargets.length
   };
   window.__PASTEL_HOST_VERIFY__=hostVerification;
+  window.__PASTEL_HOST_VERIFY__.ttsConfig={enabled:!!window.HOST_CONFIG?.tts?.enabled,endpoint:window.HOST_CONFIG?.tts?.endpoint||null};
   window.__PASTEL_HOST_VERIFY__.state="ready";
   window.__PASTEL_HOST_LIPSYNC_SAMPLE__=()=>({
     mode:lipsyncMode,
@@ -557,6 +558,7 @@ async function speak(text){
   u.lang=window.HOST_CONFIG?.language?.speech||"ar-DZ";u.rate=window.HOST_CONFIG?.language?.rate||.88;u.pitch=window.HOST_CONFIG?.language?.pitch||1;
   u.onend=()=>lipsync.stop();u.onerror=()=>lipsync.stop();speechSynthesis.speak(u)
 }
+window.__PASTEL_SPEAK__=speak;
 document.getElementById("speak").onclick=()=>last&&speak(last);document.getElementById("stop").onclick=()=>{speechSynthesis?.cancel();lipsync.stop();nodTimer=0;setHostIntent?.("idle")};
 document.getElementById("wa").href="https://wa.me/213541332877";document.getElementById("call").href="tel:+213541332877";document.getElementById("email").href="mailto:sarl.pastel.pastry@gmail.com";document.getElementById("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Résidence El Chourouk, Akid Lotfi, Oran 31000, Algeria");
 </script>
