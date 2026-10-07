@@ -43,45 +43,53 @@ jobs:
         env:
           PASTEL_PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
-          cat > /tmp/pastel-host-smoke.mjs <<'EOF'
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          cat > pastel-host-smoke.mjs <<'EOF'
           import { chromium } from "playwright";
           const url = process.env.PASTEL_PAGE_URL;
           if (!url) throw new Error("missing page_url");
           const browser = await chromium.launch({headless:true});
           const page = await browser.newPage();
           const tts = [];
-          page.on("console", msg => {
-            if (msg.text().includes("[PASTEL TTS]")) console.log(msg.text());
-          });
           page.on("request", req => {
             if (req.url().includes("/functions/v1/pastel-tts-v2")) tts.push(req);
           });
           await page.goto(url, {waitUntil:"networkidle", timeout:60000});
           await page.waitForFunction(() => window.__PASTEL_HOST_VERIFY__?.headBone, null, {timeout:30000});
           const verify = await page.evaluate(() => window.__PASTEL_HOST_VERIFY__);
-          if (!verify.audioLipsync?.analyser) throw new Error("audio analyser not ready");
           if (!verify.headBone) throw new Error("head bone missing");
           if (!verify.skeleton) throw new Error("skeleton missing");
           const buttons = await page.locator("#questions button").count();
           if (!buttons) throw new Error("question buttons missing");
+          await page.evaluate(() => {
+            window.__PASTEL_HOST_LIPSYNC_SAMPLES__ = [];
+            const t = setInterval(() => {
+              const x = window.__PASTEL_HOST_LIPSYNC_SAMPLE__?.();
+              if (x) window.__PASTEL_HOST_LIPSYNC_SAMPLES__.push(x);
+            }, 80);
+            setTimeout(() => clearInterval(t), 5000);
+          });
           await page.locator("#questions button").first().click();
-          await page.waitForTimeout(2500);
+          await page.waitForTimeout(3500);
+          const runtime = await page.evaluate(() => ({
+            verify: window.__PASTEL_HOST_VERIFY__,
+            samples: window.__PASTEL_HOST_LIPSYNC_SAMPLES__ || []
+          }));
           if (!tts.length) throw new Error("TTS endpoint was not requested");
-          const samples = await page.evaluate(() => window.__PASTEL_HOST_LIPSYNC_SAMPLES__ || []);
-          const nonzero = samples.some(s => (s.values?.length||0) + (s.jaw?.length||0) > 0);
-          if (!nonzero) throw new Error("no observed non-zero lip/jaw morph during speech");
-          console.log(JSON.stringify({url,verify,ttsRequests:tts.length,samples: samples.length,nonzero},null,2));
+          if (!runtime.verify.audioLipsync?.analyser) throw new Error("audio analyser never connected");
+          const nonzero = runtime.samples.some(s => (s.values?.length||0) + (s.jaw?.length||0) > 0);
+          if (!nonzero) throw new Error("no observed non-zero lip/jaw morph during real audio");
+          console.log(JSON.stringify({
+            url,
+            ttsRequests: tts.length,
+            analyserConnected: runtime.verify.audioLipsync.analyser,
+            audioMode: runtime.verify.audioLipsync.mode,
+            sampleCount: runtime.samples.length,
+            nonzero,
+            verify: runtime.verify
+          }, null, 2));
           await browser.close();
           EOF
-          npm init -y >/dev/null 2>&1
-          npm install --no-save playwright@1.55.0 >/dev/null 2>&1
-          npx playwright install --with-deps chromium >/dev/null 2>&1
-          sed -i 's/window.__PASTEL_HOST_LIPSYNC_SAMPLES__/window.__PASTEL_HOST_LIPSYNC_SAMPLES__/' /tmp/pastel-host-smoke.mjs
-          # Collect live morph samples while the real TTS audio is playing.
-          python3 - <<'PY'
-          p='/tmp/pastel-host-smoke.mjs'
-          s=open(p).read()
-          s=s.replace('await page.waitForTimeout(2500);','await page.waitForTimeout(250);\n          await page.evaluate(() => { window.__PASTEL_HOST_LIPSYNC_SAMPLES__=[]; const t=setInterval(() => { const x=window.__PASTEL_HOST_LIPSYNC_SAMPLE__?.(); if(x) window.__PASTEL_HOST_LIPSYNC_SAMPLES__.push(x); },80); setTimeout(() => clearInterval(t),2200); });\n          await page.waitForTimeout(2200);')
-          open(p,'w').write(s)
-          PY
-          node /tmp/pastel-host-smoke.mjs
+          node pastel-host-smoke.mjs
