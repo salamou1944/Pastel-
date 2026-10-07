@@ -151,7 +151,8 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   const mixer=new THREE.AnimationMixer(model);
   const clips=g.animations||[];
   const idleClip=clips.find(c=>/idle|breath|stand|rest/i.test(c.name||"")) || clips[0];
-  if(idleClip)mixer.clipAction(idleClip).reset().setLoop(THREE.LoopRepeat).play();
+  const idleAction=idleClip?mixer.clipAction(idleClip).reset().setLoop(THREE.LoopRepeat):null;
+  if(idleAction)idleAction.play();
   const nodClip=clips.find(c=>/nod/i.test(c.name||""));
   const talkClip=clips.find(c=>/talk|speak|gesture|wave/i.test(c.name||""));
   const nodAction=nodClip?mixer.clipAction(nodClip):null;
@@ -166,8 +167,8 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     for(const n of ["jawOpen","mouthOpen"])if(o.morphTargetDictionary[n]!==undefined){if(!jaw.has(n))jaw.set(n,[]);jaw.get(n).push({m:o,i:o.morphTargetDictionary[n]})}
   });
   const lipsyncMode=morph.size?"viseme":jaw.size?"jaw":"none";
-  const headBone=[...model.skeleton?.bones||[]].find(b=>/^(head|neck)$/i.test(b.name)) ||
-    [...(model.children||[])].find(()=>false);
+  let headBone=null;
+  model.traverse(o=>{if(!headBone&&o.isBone&&/^(head|neck)$/i.test(o.name||""))headBone=o;});
   let lookX=0,lookY=0,targetLookX=0,targetLookY=0;
   addEventListener("pointermove",e=>{
     targetLookX=((e.clientX/innerWidth)-0.5)*0.22;
@@ -175,6 +176,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   },{passive:true});
   let lipsync={tick:()=>{},stop:()=>{}};
   let speaking=false;
+  let nodTimer=0;
   function makeLipsync(text){
     const seq=[];let t=0;for(const ch of String(text||"").toLowerCase()){const v=V[ch];if(v){seq.push({v,s:t,e:t+80});t+=80}else if(/\s/.test(ch))t+=100}
     const map=lipsyncMode==="viseme"?morph:jaw;
@@ -191,6 +193,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       stop(){
         for(const items of map.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
         if(talkAction){talkAction.stop();speaking=false}
+        if(idleAction&&!idleAction.isRunning())idleAction.reset().play();
       }
     };
   }
@@ -225,10 +228,10 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     }
     model.rotation.y=Math.sin(now*0.00025)*0.018;
     model.position.y=baseY+Math.sin(now*0.00115)*0.006;
-    if(now>=nextBlink){
-      blinkUntil=now+130;
-      nextBlink=now+1800+Math.random()*2800;
-      if(nodAction&&!speaking){
+    if(now>=nextBlink){blinkUntil=now+130;nextBlink=now+1800+Math.random()*2800}
+    if(nodTimer&&now>=nodTimer){
+      nodTimer=0;
+      if(nodAction){
         nodAction.reset().setLoop(THREE.LoopOnce).clampWhenFinished=true;
         nodAction.play();
       }
@@ -294,7 +297,8 @@ function speak(text){
   if(!("speechSynthesis"in window))return;
   speechSynthesis.cancel();lipsync.stop();
   lipsync=makeLipsync(text);
-  if(talkAction){talkAction.reset().setLoop(THREE.LoopRepeat).play();speaking=true}
+  if(talkAction){if(idleAction)idleAction.stop();talkAction.reset().setLoop(THREE.LoopRepeat).play();speaking=true}
+  nodTimer=performance.now()+420;
   const u=new SpeechSynthesisUtterance(text);
   u.lang="ar-DZ";u.rate=window.HOST_CONFIG?.language?.rate||.88;u.pitch=window.HOST_CONFIG?.language?.pitch||1;
   u.onend=()=>lipsync.stop();u.onerror=()=>lipsync.stop();speechSynthesis.speak(u)
