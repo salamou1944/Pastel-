@@ -98,7 +98,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 <div class="note">المضيف المرئي هنا يجب أن يكون إنساناً واقعياً. الكلام وحركة الشفاه المتزامنة مع العربية ستُربطان فوق نفس النموذج بعد اجتياز فحص الشكل والترخيص.</div>
 </section>
 </div>
-<script src="./host-standard/config.js?v=20261007-host1"></script>
+<script src="./host-standard/config.js?v=20261007-host2"></script>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm";
 import {GLTFLoader} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js/+esm";
@@ -168,7 +168,14 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   });
   const lipsyncMode=morph.size?"viseme":jaw.size?"jaw":"none";
   let headBone=null;
-  model.traverse(o=>{if(!headBone&&o.isBone&&/^(head|neck)$/i.test(o.name||""))headBone=o;});
+  // three.ws-compatible head-bone discovery: accept common humanoid naming
+  // conventions (mixamorigHead, Armature:Head, rig_Head, CC_Base_Head, etc.)
+  // while excluding terminal helper bones such as HeadTop/HeadEnd.
+  model.traverse(o=>{
+    if(headBone||!o.isBone)return;
+    const n=String(o.name||"");
+    if(/head/i.test(n)&&!/head(?:top|end|tip)$/i.test(n))headBone=o;
+  });
   let lookX=0,lookY=0,targetLookX=0,targetLookY=0;
   addEventListener("pointermove",e=>{
     targetLookX=((e.clientX/innerWidth)-0.5)*0.22;
@@ -303,7 +310,7 @@ function speak(text){
   u.lang="ar-DZ";u.rate=window.HOST_CONFIG?.language?.rate||.88;u.pitch=window.HOST_CONFIG?.language?.pitch||1;
   u.onend=()=>lipsync.stop();u.onerror=()=>lipsync.stop();speechSynthesis.speak(u)
 }
-document.getElementById("speak").onclick=()=>last&&speak(last);document.getElementById("stop").onclick=()=>speechSynthesis?.cancel();
+document.getElementById("speak").onclick=()=>last&&speak(last);document.getElementById("stop").onclick=()=>{speechSynthesis?.cancel();lipsync.stop();nodTimer=0};
 document.getElementById("wa").href="https://wa.me/213541332877";document.getElementById("call").href="tel:+213541332877";document.getElementById("email").href="mailto:sarl.pastel.pastry@gmail.com";document.getElementById("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Résidence El Chourouk, Akid Lotfi, Oran 31000, Algeria");
 </script>
 <script>
