@@ -181,9 +181,109 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     targetLookX=((e.clientX/innerWidth)-0.5)*0.22;
     targetLookY=((e.clientY/innerHeight)-0.5)*-0.10;
   },{passive:true});
+  // Audio-driven lipsync path:
+  // connectAudioElement(<audio>) routes the real waveform through Web Audio
+  // instead of guessing mouth timing from text. SpeechSynthesis remains the
+  // deterministic fallback because browsers do not expose its rendered audio
+  // as a portable MediaElement/AnalyserNode source.
+  let audioCtx=null;
+  let audioSource=null;
+  let audioAnalyser=null;
+  let audioData=null;
+  let audioElement=null;
+  let audioFrame=null;
+  const audioLipsync={
+    mode:"unavailable",
+    connected:false,
+    source:null,
+    analyser:false,
+    connect(el){
+      if(!el||typeof AudioContext==="undefined") return false;
+      try{
+        if(audioElement===el&&audioAnalyser)return true;
+        this.disconnect();
+        audioCtx=audioCtx||new AudioContext();
+        if(audioCtx.state==="suspended")audioCtx.resume().catch(()=>{});
+        audioSource=audioCtx.createMediaElementSource(el);
+        audioAnalyser=audioCtx.createAnalyser();
+        audioAnalyser.fftSize=256;
+        audioAnalyser.smoothingTimeConstant=.72;
+        audioAnalyser.minDecibels=-85;
+        audioAnalyser.maxDecibels=-15;
+        audioData=new Uint8Array(audioAnalyser.frequencyBinCount);
+        audioSource.connect(audioAnalyser);
+        audioAnalyser.connect(audioCtx.destination);
+        audioElement=el;
+        this.mode="audio-frequency";
+        this.connected=true;
+        this.source=el.currentSrc||el.src||"media-element";
+        this.analyser=true;
+        return true;
+      }catch(err){
+        console.warn("[PASTEL AUDIO LIPSYNC] connect failed",err);
+        this.disconnect();
+        return false;
+      }
+    },
+    disconnect(){
+      if(audioFrame){cancelAnimationFrame(audioFrame);audioFrame=null}
+      try{audioSource?.disconnect()}catch{}
+      try{audioAnalyser?.disconnect()}catch{}
+      audioSource=null;audioAnalyser=null;audioData=null;audioElement=null;
+      this.connected=false;this.analyser=false;this.source=null;
+      if(this.mode==="audio-frequency")this.mode="unavailable";
+    },
+    tick(){
+      if(!audioAnalyser||!audioData||!audioElement||audioElement.paused||audioElement.ended)return false;
+      audioAnalyser.getByteFrequencyData(audioData);
+      const n=audioData.length;
+      const band=(from,to)=>{
+        let sum=0,count=0;
+        for(let i=Math.max(0,Math.floor(n*from));i<Math.min(n,Math.ceil(n*to));i++){sum+=audioData[i];count++}
+        return count?sum/count/255:0;
+      };
+      const low=band(0,.16),mid=band(.16,.42),high=band(.42,.82);
+      const energy=Math.min(1,low*.55+mid*.30+high*.15);
+      if(lipsyncMode==="viseme"){
+        const weights={
+          viseme_aa:Math.min(1,low*1.55),
+          viseme_O:Math.min(1,low*1.25),
+          viseme_E:Math.min(1,mid*1.35),
+          viseme_I:Math.min(1,mid*1.15),
+          viseme_SS:Math.min(1,high*1.55),
+          viseme_FF:Math.min(1,high*1.25),
+          viseme_CH:Math.min(1,(mid+high)*.8),
+          viseme_PP:energy<.08?0.48:0
+        };
+        for(const [name,items] of morph)for(const x of items){
+          const target=weights[name]||0;
+          x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.72+target*.28;
+        }
+      }else if(lipsyncMode==="jaw"){
+        for(const items of jaw.values())for(const x of items)
+          x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.70+Math.min(1,energy*1.35)*.30;
+      }
+      return true;
+    }
+  };
+  window.PASTEL_AUDIO_LIPSYNC=audioLipsync;
   let lipsync={tick:()=>{},stop:()=>{}};
   let speaking=false;
   let nodTimer=0;
+  function makeAudioLipsync(el){
+    if(!audioLipsync.connect(el))return null;
+    return {
+      start:performance.now(),
+      tick(){audioLipsync.tick()},
+      stop(){
+        if(lipsyncMode==="viseme")for(const items of morph.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
+        if(lipsyncMode==="jaw")for(const items of jaw.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
+        audioLipsync.disconnect();
+        if(talkAction){talkAction.stop();speaking=false}
+        if(idleAction&&!idleAction.isRunning())idleAction.reset().play();
+      }
+    };
+  }
   function makeLipsync(text){
     const seq=[];let t=0;for(const ch of String(text||"").toLowerCase()){const v=V[ch];if(v){seq.push({v,s:t,e:t+80});t+=80}else if(/\s/.test(ch))t+=100}
     const map=lipsyncMode==="viseme"?morph:jaw;
@@ -215,6 +315,11 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   status.classList.add("ok");
   const hostVerification={
     model:MODEL,
+    audioLipsync:{
+      mode:audioLipsync.mode,
+      connected:audioLipsync.connected,
+      analyser:audioLipsync.analyser
+    },
     skeleton:model.getObjectByProperty("type","SkinnedMesh")?.skeleton?.bones?.length||0,
     headBone:headBone?.name||null,
     animations:clips.map(c=>c.name),
@@ -317,6 +422,9 @@ let last="";
 for(const [label,text] of Q){const b=document.createElement("button");b.textContent=label;b.onclick=()=>{last=text;document.getElementById("answer").textContent=text;speak(text)};document.getElementById("questions").appendChild(b)}
 function speak(text){
   if(!("speechSynthesis"in window))return;
+  // SpeechSynthesis is intentionally kept on the text-viseme fallback path.
+  // A real <audio> TTS clip can call window.PASTEL_AUDIO_LIPSYNC.connect(audio)
+  // and then use the same render loop for waveform-driven visemes.
   speechSynthesis.cancel();lipsync.stop();
   lipsync=makeLipsync(text);
   if(talkAction){if(idleAction)idleAction.stop();talkAction.reset().setLoop(THREE.LoopRepeat).play();speaking=true}
