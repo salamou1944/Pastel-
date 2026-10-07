@@ -385,7 +385,14 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     jawTargets:[...jaw.keys()],
     blinkTargets:blinkTargets.length
   };
-  window.__PASTEL_HOST_VERIFY__=hostVerification;
+  window.__PASTEL_HOST_VERIFY__=hostVerification;\n  window.__PASTEL_HOST_LIPSYNC_SAMPLE__=()=>({
+    mode:lipsyncMode,
+    audioConnected:!!audioLipsync.connected,
+    active:!!audioLipsync.active,
+    values:[...morph.entries()].flatMap(([name,items])=>items.map(x=>({name,value:Number(x.m.morphTargetInfluences[x.i]||0)}))).filter(x=>x.value>0.01).slice(0,20),
+    jaw:[...jaw.entries()].flatMap(([name,items])=>items.map(x=>({name,value:Number(x.m.morphTargetInfluences[x.i]||0)}))).filter(x=>x.value>0.01).slice(0,20)
+  });
+
   console.info("[PASTEL HOST VERIFY]",hostVerification);
   console.info("[PASTEL HOST]",{
     model:MODEL,
