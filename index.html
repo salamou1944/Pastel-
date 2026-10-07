@@ -213,6 +213,21 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   let nextBlink=performance.now()+1800+Math.random()*2200, blinkUntil=0;
   status.textContent="المضيف جاهز · realistic-male · lipsync: "+lipsyncMode;
   status.classList.add("ok");
+  const hostVerification={
+    model:MODEL,
+    skeleton:model.getObjectByProperty("type","SkinnedMesh")?.skeleton?.bones?.length||0,
+    headBone:headBone?.name||null,
+    animations:clips.map(c=>c.name),
+    idle:idleClip?.name||null,
+    talk:talkClip?.name||null,
+    nod:nodClip?.name||null,
+    lipsync:lipsyncMode,
+    visemeTargets:[...morph.keys()],
+    jawTargets:[...jaw.keys()],
+    blinkTargets:blinkTargets.length
+  };
+  window.__PASTEL_HOST_VERIFY__=hostVerification;
+  console.info("[PASTEL HOST VERIFY]",hostVerification);
   console.info("[PASTEL HOST]",{
     model:MODEL,
     animations:clips.map(c=>c.name),
