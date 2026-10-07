@@ -154,7 +154,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   function makeLipsync(text){
     const seq=[];let t=0;for(const ch of String(text||"").toLowerCase()){const v=V[ch];if(v){seq.push({v,s:t,e:t+80});t+=80}else if(/\s/.test(ch))t+=100}
     const map=lipsyncMode==="viseme"?morph:jaw;
-    return {start:performance.now(),tick(now){const el=now-this.start;let active=null;for(const p of seq)if(el>=p.s&&el<p.e){active=p.v;break}for(const [name,items] of map){const val=lipsyncMode==="viseme"?(name===active?.v?0.92:0):(active?0.55:0);for(const x of items)x.m.morphTargetInfluences[x.i]=val}},stop(){for(const items of map.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0}};
+    return {start:performance.now(),tick(now){const el=now-this.start;let active=null;for(const p of seq)if(el>=p.s&&el<p.e){active=p.v;break}for(const [name,items] of map){const val=lipsyncMode==="viseme"?(name===active?0.92:0):(active?0.55:0);for(const x of items)x.m.morphTargetInfluences[x.i]=val}},stop(){for(const items of map.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0}};
   }
   model.traverse(o=>{
     if(!o.morphTargetDictionary||!o.morphTargetInfluences)return;
