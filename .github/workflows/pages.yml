@@ -60,8 +60,9 @@ jobs:
             if (req.url().includes("/functions/v1/pastel-tts-v2")) tts.push(req);
           });
           await page.goto(url, {waitUntil:"networkidle", timeout:60000});
-          await page.waitForFunction(() => window.__PASTEL_HOST_VERIFY__?.headBone, null, {timeout:30000});
+          await page.waitForFunction(() => window.__PASTEL_HOST_VERIFY__?.headBone || window.__PASTEL_HOST_LOAD_ERROR__, null, {timeout:30000});
           const verify = await page.evaluate(() => window.__PASTEL_HOST_VERIFY__);
+          if (verify?.loadError) throw new Error("Host runtime load failed: "+verify.loadError+"; pageErrors="+pageErrors.join(" | "));
           if (!verify.headBone) throw new Error("head bone missing");
           if (!verify.skeleton) throw new Error("skeleton missing");
           const buttons = await page.locator("#questions button").count();
@@ -78,6 +79,12 @@ jobs:
           await page.waitForTimeout(3500);
           const runtime = await page.evaluate(() => ({
             verify: window.__PASTEL_HOST_VERIFY__,
+            audio: window.PASTEL_AUDIO_LIPSYNC ? {
+              mode: window.PASTEL_AUDIO_LIPSYNC.mode,
+              connected: window.PASTEL_AUDIO_LIPSYNC.connected,
+              analyser: window.PASTEL_AUDIO_LIPSYNC.analyser,
+              source: window.PASTEL_AUDIO_LIPSYNC.source
+            } : null,
             samples: window.__PASTEL_HOST_LIPSYNC_SAMPLES__ || []
           }));
           if (!tts.length) throw new Error("TTS endpoint was not requested");
