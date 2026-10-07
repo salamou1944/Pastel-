@@ -113,14 +113,38 @@ function loadHost(url,onError){
   scene.add(model);
   const box=new THREE.Box3().setFromObject(model), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
   model.position.sub(center);
+  const baseY=model.position.y;
   const max=Math.max(size.x,size.y,size.z);
   const dist=max/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))*1.65;
   camera.position.set(0,0,dist);
-  // Wider framing: show the complete available avatar instead of a tight bust crop.
   camera.lookAt(0,0,0);
-  status.textContent="المضيف ثلاثي الأبعاد جاهز.";
+
+  // Keep the host alive even before a full speech/lipsync provider is attached:
+  // idle animation + subtle breathing + generic blink morph detection.
+  const clock=new THREE.Clock();
+  const mixer=new THREE.AnimationMixer(model);
+  for(const clip of g.animations||[]) mixer.clipAction(clip).play();
+  const blinkTargets=[];
+  model.traverse(o=>{
+    if(!o.morphTargetDictionary||!o.morphTargetInfluences)return;
+    for(const [name,index] of Object.entries(o.morphTargetDictionary)){
+      if(/blink|eye.*close|eyes.*close/i.test(name)) blinkTargets.push([o,index]);
+    }
+  });
+  let nextBlink=performance.now()+1800+Math.random()*2200, blinkUntil=0;
+  status.textContent="المضيف الواقعي جاهز.";
   status.classList.add("ok");
-  function animate(){requestAnimationFrame(animate);model.rotation.y=Math.sin(performance.now()*0.00025)*0.035;renderer.render(scene,camera)}
+  function animate(){
+    requestAnimationFrame(animate);
+    const now=performance.now(), dt=clock.getDelta();
+    mixer.update(dt);
+    model.rotation.y=Math.sin(now*0.00025)*0.025;
+    model.position.y=baseY+Math.sin(now*0.00115)*0.006;
+    if(now>=nextBlink){blinkUntil=now+130;nextBlink=now+1800+Math.random()*2800}
+    const blink=blinkUntil>now?1:0;
+    for(const [mesh,index] of blinkTargets) mesh.morphTargetInfluences[index]=blink;
+    renderer.render(scene,camera);
+  }
   animate();
 },ev=>{
   if(ev.total) status.textContent="جاري تحميل المضيف… "+Math.round(ev.loaded/ev.total*100)+"%";
