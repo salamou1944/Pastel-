@@ -96,7 +96,11 @@ window.HOST_CONFIG = {
   },
 
   tts: {
-    enabled: false,
-    endpoint: ""
+    enabled: true,
+    endpoint: "https://rdcodzowehzmwdxhztxe.supabase.co/functions/v1/pastel-tts-v2",
+    provider: "msedge-tts",
+    voice: "ar-DZ-AminaNeural",
+    mode: "audio-frequency",
+    note: "Real server-side Arabic TTS path. Uses Microsoft Edge Read Aloud through msedge-tts; no API key is required. Provider/service terms must be verified before paid customer rollout."
   }
 };
