@@ -266,7 +266,60 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       return true;
     }
   };
+  // Optional precise viseme timeline path. A TTS provider can supply
+  // Oculus/ARKit viseme IDs + start/duration in milliseconds; this avoids
+  // guessing phonemes from text and is more accurate than frequency bands.
+  const visemeAlias={
+    aa:"viseme_aa",E:"viseme_E",I:"viseme_I",O:"viseme_O",U:"viseme_U",
+    PP:"viseme_PP",SS:"viseme_SS",TH:"viseme_TH",CH:"viseme_CH",FF:"viseme_FF",
+    kk:"viseme_kk",nn:"viseme_nn",RR:"viseme_RR",DD:"viseme_DD",sil:"viseme_sil"
+  };
+  function makeVisemeTimeline(timeline){
+    const frames=(Array.isArray(timeline)?timeline:[]).map(x=>({
+      v:visemeAlias[x.viseme]||x.viseme,
+      s:Number(x.start??x.time??x.vtime??0),
+      e:Number(x.end??((x.start??x.time??x.vtime??0)+(x.duration??x.vduration??80)))
+    })).filter(x=>x.v&&Number.isFinite(x.s)&&Number.isFinite(x.e)&&x.e>x.s);
+    return {
+      start:performance.now(),
+      tick(now){
+        const elapsed=now-this.start;
+        let active=null;
+        for(const f of frames)if(elapsed>=f.s&&elapsed<f.e){active=f.v;break}
+        for(const [name,items] of morph)for(const x of items)
+          x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.58+(name===active?.92:0)*.42;
+        if(lipsyncMode==="jaw"&&active)for(const items of jaw.values())for(const x of items)
+          x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.55+.45*.35;
+      },
+      stop(){
+        if(lipsyncMode==="viseme")for(const items of morph.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
+        if(lipsyncMode==="jaw")for(const items of jaw.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
+        if(talkAction){talkAction.stop();speaking=false}
+        if(idleAction&&!idleAction.isRunning())idleAction.reset().play();
+      }
+    };
+  }
   window.PASTEL_AUDIO_LIPSYNC=audioLipsync;
+  window.PASTEL_HOST_LIPSYNC={
+    useVisemeTimeline(timeline){
+      speechSynthesis?.cancel();
+      lipsync.stop();
+      const next=makeVisemeTimeline(timeline);
+      if(!next)return false;
+      lipsync=next;
+      if(talkAction){if(idleAction)idleAction.stop();talkAction.reset().setLoop(THREE.LoopRepeat).play();speaking=true}
+      return true;
+    },
+    useAudioElement(el){
+      speechSynthesis?.cancel();
+      lipsync.stop();
+      const next=makeAudioLipsync(el);
+      if(!next)return false;
+      lipsync=next;
+      if(talkAction){if(idleAction)idleAction.stop();talkAction.reset().setLoop(THREE.LoopRepeat).play();speaking=true}
+      return true;
+    }
+  };
   let lipsync={tick:()=>{},stop:()=>{}};
   let speaking=false;
   let nodTimer=0;
@@ -318,7 +371,8 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     audioLipsync:{
       mode:audioLipsync.mode,
       connected:audioLipsync.connected,
-      analyser:audioLipsync.analyser
+      analyser:audioLipsync.analyser,
+      preciseTimelineReady:true
     },
     skeleton:model.getObjectByProperty("type","SkinnedMesh")?.skeleton?.bones?.length||0,
     headBone:headBone?.name||null,
