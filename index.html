@@ -130,10 +130,12 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   const box=new THREE.Box3().setFromObject(model), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
   model.position.sub(center);
   const baseY=model.position.y;
-  const max=Math.max(size.x,size.y,size.z);
-  const dist=max/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))*1.65;
-  camera.position.set(0,0,dist*0.92);
-  camera.lookAt(0,0.72,0);
+  // Hospitality framing: show a real upper-body host, not a tiny full-body avatar.
+  const targetY=size.y*0.18;
+  const visibleHeight=size.y*0.78;
+  const dist=visibleHeight/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
+  camera.position.set(0,targetY,dist*1.08);
+  camera.lookAt(0,size.y*0.20,0);
 
   // Keep the host alive even before a full speech/lipsync provider is attached:
   // idle animation + subtle breathing + generic blink morph detection.
@@ -147,7 +149,13 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     o.material=Array.isArray(o.material)?o.material.map(dress):dress(o.material);
   });
   const mixer=new THREE.AnimationMixer(model);
-  for(const clip of g.animations||[]) mixer.clipAction(clip).play();
+  const clips=g.animations||[];
+  const idleClip=clips.find(c=>/idle|breath|stand|rest/i.test(c.name||"")) || clips[0];
+  if(idleClip)mixer.clipAction(idleClip).reset().setLoop(THREE.LoopRepeat).play();
+  const nodClip=clips.find(c=>/nod/i.test(c.name||""));
+  const talkClip=clips.find(c=>/talk|speak|gesture|wave/i.test(c.name||""));
+  const nodAction=nodClip?mixer.clipAction(nodClip):null;
+  const talkAction=talkClip?mixer.clipAction(talkClip):null;
   const blinkTargets=[];
   const ARKIT=["viseme_aa","viseme_CH","viseme_DD","viseme_E","viseme_FF","viseme_I","viseme_kk","viseme_nn","viseme_O","viseme_PP","viseme_RR","viseme_sil","viseme_SS","viseme_TH","viseme_U"];
   const V={a:"viseme_aa",e:"viseme_E",i:"viseme_I",o:"viseme_O",u:"viseme_U",b:"viseme_PP",m:"viseme_PP",p:"viseme_PP",f:"viseme_FF",v:"viseme_FF",d:"viseme_DD",t:"viseme_DD",n:"viseme_DD",l:"viseme_DD",k:"viseme_kk",g:"viseme_kk",c:"viseme_kk",q:"viseme_kk",s:"viseme_SS",z:"viseme_SS",x:"viseme_SS",r:"viseme_RR",w:"viseme_U",y:"viseme_I",h:"viseme_E",j:"viseme_CH",ا:"viseme_aa",أ:"viseme_aa",إ:"viseme_aa",آ:"viseme_aa",و:"viseme_U",ي:"viseme_I",ب:"viseme_PP",م:"viseme_PP",ف:"viseme_FF",ث:"viseme_TH",ذ:"viseme_TH",ت:"viseme_DD",د:"viseme_DD",ن:"viseme_DD",ل:"viseme_DD",ك:"viseme_kk",ق:"viseme_kk",ج:"viseme_CH",ش:"viseme_CH",س:"viseme_SS",ص:"viseme_SS",ز:"viseme_SS",ر:"viseme_RR",ه:"viseme_E",ح:"viseme_E",خ:"viseme_CH",ع:"viseme_aa",غ:"viseme_RR"};
@@ -158,11 +166,33 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     for(const n of ["jawOpen","mouthOpen"])if(o.morphTargetDictionary[n]!==undefined){if(!jaw.has(n))jaw.set(n,[]);jaw.get(n).push({m:o,i:o.morphTargetDictionary[n]})}
   });
   const lipsyncMode=morph.size?"viseme":jaw.size?"jaw":"none";
+  const headBone=[...model.skeleton?.bones||[]].find(b=>/^(head|neck)$/i.test(b.name)) ||
+    [...(model.children||[])].find(()=>false);
+  let lookX=0,lookY=0,targetLookX=0,targetLookY=0;
+  addEventListener("pointermove",e=>{
+    targetLookX=((e.clientX/innerWidth)-0.5)*0.22;
+    targetLookY=((e.clientY/innerHeight)-0.5)*-0.10;
+  },{passive:true});
   let lipsync={tick:()=>{},stop:()=>{}};
+  let speaking=false;
   function makeLipsync(text){
     const seq=[];let t=0;for(const ch of String(text||"").toLowerCase()){const v=V[ch];if(v){seq.push({v,s:t,e:t+80});t+=80}else if(/\s/.test(ch))t+=100}
     const map=lipsyncMode==="viseme"?morph:jaw;
-    return {start:performance.now(),tick(now){const el=now-this.start;let active=null;for(const p of seq)if(el>=p.s&&el<p.e){active=p.v;break}for(const [name,items] of map){const val=lipsyncMode==="viseme"?(name===active?0.92:0):(active?0.55:0);for(const x of items)x.m.morphTargetInfluences[x.i]=val}},stop(){for(const items of map.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0}};
+    return {
+      start:performance.now(),
+      tick(now){
+        const el=now-this.start;let active=null;
+        for(const p of seq)if(el>=p.s&&el<p.e){active=p.v;break}
+        for(const [name,items] of map){
+          const val=lipsyncMode==="viseme"?(name===active?0.92:0):(active?0.55:0);
+          for(const x of items)x.m.morphTargetInfluences[x.i]=val;
+        }
+      },
+      stop(){
+        for(const items of map.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
+        if(talkAction){talkAction.stop();speaking=false}
+      }
+    };
   }
   model.traverse(o=>{
     if(!o.morphTargetDictionary||!o.morphTargetInfluences)return;
@@ -171,16 +201,38 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     }
   });
   let nextBlink=performance.now()+1800+Math.random()*2200, blinkUntil=0;
-  status.textContent="المضيف جاهز · lipsync: "+lipsyncMode;
+  status.textContent="المضيف جاهز · realistic-male · lipsync: "+lipsyncMode;
   status.classList.add("ok");
+  console.info("[PASTEL HOST]",{
+    model:MODEL,
+    animations:clips.map(c=>c.name),
+    idle:idleClip?.name||null,
+    talk:talkClip?.name||null,
+    nod:nodClip?.name||null,
+    lipsync:lipsyncMode,
+    blinkTargets:blinkTargets.length
+  });
   function animate(){
     requestAnimationFrame(animate);
     const now=performance.now(), dt=clock.getDelta();
     mixer.update(dt);
     lipsync.tick(now);
-    model.rotation.y=Math.sin(now*0.00025)*0.025;
+    lookX+=(targetLookX-lookX)*Math.min(1,dt*2.5);
+    lookY+=(targetLookY-lookY)*Math.min(1,dt*2.5);
+    if(headBone){
+      headBone.rotation.y=lookX;
+      headBone.rotation.x=lookY;
+    }
+    model.rotation.y=Math.sin(now*0.00025)*0.018;
     model.position.y=baseY+Math.sin(now*0.00115)*0.006;
-    if(now>=nextBlink){blinkUntil=now+130;nextBlink=now+1800+Math.random()*2800}
+    if(now>=nextBlink){
+      blinkUntil=now+130;
+      nextBlink=now+1800+Math.random()*2800;
+      if(nodAction&&!speaking){
+        nodAction.reset().setLoop(THREE.LoopOnce).clampWhenFinished=true;
+        nodAction.play();
+      }
+    }
     const blink=blinkUntil>now?1:0;
     for(const [mesh,index] of blinkTargets) mesh.morphTargetInfluences[index]=blink;
     renderer.render(scene,camera);
@@ -238,7 +290,15 @@ const Q=[
 ];
 let last="";
 for(const [label,text] of Q){const b=document.createElement("button");b.textContent=label;b.onclick=()=>{last=text;document.getElementById("answer").textContent=text;speak(text)};document.getElementById("questions").appendChild(b)}
-function speak(text){if(!("speechSynthesis"in window))return;speechSynthesis.cancel();lipsync.stop();lipsync=makeLipsync(text);const u=new SpeechSynthesisUtterance(text);u.lang="ar-DZ";u.rate=window.HOST_CONFIG?.language?.rate||.88;u.pitch=window.HOST_CONFIG?.language?.pitch||1;u.onend=()=>lipsync.stop();u.onerror=()=>lipsync.stop();speechSynthesis.speak(u)}
+function speak(text){
+  if(!("speechSynthesis"in window))return;
+  speechSynthesis.cancel();lipsync.stop();
+  lipsync=makeLipsync(text);
+  if(talkAction){talkAction.reset().setLoop(THREE.LoopRepeat).play();speaking=true}
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang="ar-DZ";u.rate=window.HOST_CONFIG?.language?.rate||.88;u.pitch=window.HOST_CONFIG?.language?.pitch||1;
+  u.onend=()=>lipsync.stop();u.onerror=()=>lipsync.stop();speechSynthesis.speak(u)
+}
 document.getElementById("speak").onclick=()=>last&&speak(last);document.getElementById("stop").onclick=()=>speechSynthesis?.cancel();
 document.getElementById("wa").href="https://wa.me/213541332877";document.getElementById("call").href="tel:+213541332877";document.getElementById("email").href="mailto:sarl.pastel.pastry@gmail.com";document.getElementById("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Résidence El Chourouk, Akid Lotfi, Oran 31000, Algeria");
 </script>
