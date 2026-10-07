@@ -87,7 +87,8 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.m
 import {GLTFLoader} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js/+esm";
 import {MeshoptDecoder} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/libs/meshopt_decoder.module.js/+esm";
 
-const MODEL="./assets/mpfb.glb";
+const MODEL_FALLBACK="./assets/mpfb.glb";
+const MODEL_PRIMARY="https://three.ws/avatars/realistic-female.glb";
 const status=document.getElementById("status"), mount=document.getElementById("avatar");
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(30,1,.01,1000);
@@ -106,7 +107,8 @@ addEventListener("resize",resize); resize();
 
 const loader=new GLTFLoader();
 loader.setMeshoptDecoder(MeshoptDecoder);
-loader.load(MODEL,g=>{
+function loadHost(url,onError){
+  loader.load(url,g=>{
   const model=g.scene;
   scene.add(model);
   const box=new THREE.Box3().setFromObject(model), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
@@ -122,10 +124,15 @@ loader.load(MODEL,g=>{
   animate();
 },ev=>{
   if(ev.total) status.textContent="جاري تحميل المضيف… "+Math.round(ev.loaded/ev.total*100)+"%";
-},err=>{
-  console.error(err);
-  status.textContent="تعذر تشغيل المضيف ثلاثي الأبعاد. الحوار ما زال يعمل.";
-  status.classList.add("error");
+},err=>{ onError?.(err); });
+}
+loadHost(MODEL_PRIMARY,()=>{
+  status.textContent="تعذر تحميل المضيف الواقعي؛ نستخدم المضيف المحلي الموثوق…";
+  loadHost(MODEL_FALLBACK,()=>{
+    console.error("Both host assets failed");
+    status.textContent="تعذر تشغيل المضيف ثلاثي الأبعاد. الحوار ما زال يعمل.";
+    status.classList.add("error");
+  });
 });
 
 const Q=[
