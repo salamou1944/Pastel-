@@ -377,6 +377,8 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       const next=makeTextLipsync(text);
       if(!next)return false;
       lipsync=next;
+      next.tick(performance.now());
+      if(window.__PASTEL_HOST_VERIFY__) window.__PASTEL_HOST_VERIFY__.textVisemeActive=[...morph.values()].flatMap(items=>items.map(x=>Number(x.m.morphTargetInfluences[x.i]||0))).filter(v=>v>0.01).length;
       setHostIntent("speaking"); speaking=true;
       return true;
     },
