@@ -40,6 +40,16 @@ jobs:
           open("/tmp/pastel-host-module.mjs","w",encoding="utf-8").write(m.group(1))
           PY
           node --check /tmp/pastel-host-module.mjs
+      - name: Validate Staff Queue module syntax
+        run: |
+          python - <<'PY'
+          import re
+          h=open("staff.html",encoding="utf-8").read()
+          m=re.search(r'<script type="module">(.*?)</script>',h,re.S)
+          if not m: raise SystemExit("Staff Queue module script missing")
+          open("/tmp/pastel-staff.mjs","w",encoding="utf-8").write(m.group(1))
+          PY
+          node --check /tmp/pastel-staff.mjs
       - name: Verify Host GLB structure
         run: |
           node -e "const fs=require('fs');const b=fs.readFileSync('assets/pastel-host.glb');if(b.readUInt32LE(0)!==0x46546c67)throw Error('invalid GLB');const j=JSON.parse(b.subarray(20,20+b.readUInt32LE(12)).toString().trim());const nodes=(j.nodes||[]).map(x=>x.name||'');const skins=j.skins||[];const anim=(j.animations||[]).map(x=>x.name||'');const head=nodes.find(n=>/head/i.test(n)&&!/head(?:top|end|tip)$/i.test(n));if(!skins.length||!head)throw Error('missing skeleton/head');console.log(JSON.stringify({skins:skins.length,bones:skins.reduce((n,s)=>n+(s.joints||[]).length,0),headBone:head,animations:anim},null,2));"
@@ -48,6 +58,12 @@ jobs:
           path: .
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify anonymous order read is blocked
+        run: |
+          code=$(curl -sS -o /tmp/pastel-anon-orders.txt -w "%{http_code}" "https://rdcodzowehzmwdxhztxe.supabase.co/rest/v1/pastel_orders?select=order_id,status&limit=1")
+          test "$code" != "200"
+          echo "ANON_ORDER_READ_BLOCKED $code"
 
       - name: Verify deployed Host audio + lipsync with Playwright
         env:
