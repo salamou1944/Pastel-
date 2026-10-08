@@ -61,7 +61,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 </div>
 <div class="shell">
 <section class="card host">
-<div class="badge">PASTEL HOST · REALISTIC 3D</div>
+<div class="badge">PASTEL HOST · REALISTIC 3D · LIVE CAFE</div>
 <div id="avatar"></div>
 <div class="floating-actions" aria-label="PASTEL actions">
   <button data-action="ask">اسأل Host</button>
@@ -70,7 +70,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
   <button data-action="reserve">احجز</button>
   <button data-action="location">المكان</button>
 </div>
-<div id="status" class="status">جاري تحميل المضيف ثلاثي الأبعاد…</div>
+<div id="status" class="status">جاري تحميل المضيف ثلاثي الأبعاد داخل المقهى…</div>
 </section>
 <section class="card chat">
 <div class="eyebrow">PASTEL PASTRY&COFFEE</div>
@@ -104,6 +104,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm";
 import {GLTFLoader} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js/+esm";
 import {MeshoptDecoder} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/libs/meshopt_decoder.module.js/+esm";
+import {buildPastelCafeWorld} from "./host-standard/pastel-cafe-world.js";
 
 window.__PASTEL_HOST_MODULE_BOOT__="started";
 const MODEL=window.HOST_CONFIG?.host?.modelUrl || "./assets/pastel-host.glb";
@@ -111,6 +112,7 @@ window.__PASTEL_HOST_VERIFY__={model:MODEL,state:"loading",headBone:null,skeleto
 window.__PASTEL_HOST_LOAD_ERROR__=null;
 const status=document.getElementById("status"), mount=document.getElementById("avatar");
 const scene=new THREE.Scene();
+const cafeWorld=buildPastelCafeWorld(THREE,scene);
 const camera=new THREE.PerspectiveCamera(30,1,.01,1000);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -563,6 +565,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   function animate(){
     requestAnimationFrame(animate);
     const now=performance.now(), dt=clock.getDelta();
+    cafeWorld.clock();
     mixer.update(dt);
     lipsync.tick(now);
 
