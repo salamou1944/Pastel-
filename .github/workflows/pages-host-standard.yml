@@ -1,4 +1,4 @@
-name: Deploy Host Standard to GitHub Pages
+name: Validate Host Standard
 
 on:
   push:
@@ -10,31 +10,25 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: host-standard-validation
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+      - name: Validate Host Standard config
+        run: node --check host-standard/config.js
 
-      - name: Upload Host Standard artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: host-standard
-
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Validate Host Standard manifest files
+        run: |
+          test -f host-standard/index.html
+          test -f host-standard/config.schema.json
+          test -f host-standard/order-schema.json
+          test -f host-standard/ORDER-FLOW.md
+          echo "Host Standard files present and config syntax is valid."
