@@ -197,7 +197,8 @@ async function setupLiveCafe(){
     fallback(String(error?.message||error));
   }
 }
-setupLiveCafe();(30,1,.01,1000);
+setupLiveCafe();
+const camera=new THREE.PerspectiveCamera(30,1,.01,1000);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
