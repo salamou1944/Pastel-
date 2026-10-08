@@ -364,7 +364,6 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       return true;
     },
     useText(text){
-      speechSynthesis?.cancel();
       lipsync.stop();
       const next=makeTextLipsync(text);
       if(!next)return false;
@@ -387,6 +386,21 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     }
   };
   let lipsync={tick:()=>{},stop:()=>{}};
+  function activateViseme(name="viseme_aa",weight=.72){
+    const requested=String(name||"viseme_aa");
+    let matched=0,readBack=0;
+    for(const [target,items] of morph){
+      for(const x of items){
+        const value=target===requested?weight:0;
+        x.m.morphTargetInfluences[x.i]=value;
+        if(target===requested){matched++;if(Number(x.m.morphTargetInfluences[x.i]||0)>0)readBack++;}
+      }
+    }
+    const result={requested,matched,readBack,mode:lipsyncMode};
+    if(window.__PASTEL_HOST_VERIFY__)window.__PASTEL_HOST_VERIFY__.directVisemeTest=result;
+    return result;
+  }
+  window.__PASTEL_HOST_VISEME_TEST__=activateViseme;
   let speaking=false;
   let nodTimer=0;
   function makeAudioLipsync(el){
