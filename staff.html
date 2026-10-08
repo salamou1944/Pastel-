@@ -84,7 +84,7 @@ document.getElementById("login-form").onsubmit=async e=>{
  const status=document.getElementById("auth-status");
  if(email!==STAFF_EMAIL){status.textContent="هذا البريد غير مخول.";return}
  status.textContent="جاري إرسال رابط الدخول…";
- const {error}=await supabase.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.href}});
+ const {error}=await supabase.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:location.href}});
  status.textContent=error?"تعذر إرسال الرابط: "+error.message:"تم إرسال رابط الدخول. افحص البريد.";
 };
 supabase.auth.onAuthStateChange(async (_event,session)=>{
