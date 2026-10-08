@@ -399,7 +399,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       }
     }
     const result={requested,matched,readBack,mode:lipsyncMode};
-    if(window.__PASTEL_HOST_VERIFY__)window.__PASTEL_HOST_VERIFY__.directVisemeTest=result;
+    if(window.__PASTEL_HOST_VERIFY__){window.__PASTEL_HOST_VERIFY__.directVisemeTest=result;window.__PASTEL_HOST_VERIFY__.textVisemeActive=readBack;}
     return result;
   }
   window.__PASTEL_HOST_VISEME_TEST__=activateViseme;
