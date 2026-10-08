@@ -25,7 +25,7 @@ main{width:min(1200px,100%);margin:auto;padding:24px}.top{display:flex;justify-c
 </section>
 <section id="app" hidden>
 <div class="top">
-<div><div class="eyebrow">PASTEL OPERATIONS</div><h1>طابور الطلبات</h1><div id="identity" class="muted small"></div></div>
+<div><div class="eyebrow">PASTEL OPERATIONS</div><h1>طابور الطلبات</h1><div id="identity" class="muted small"></div><div id="realtime-status" class="small muted">○ غير متصل</div></div>
 <button id="logout">تسجيل الخروج</button>
 </div>
 <div class="toolbar">
@@ -63,6 +63,43 @@ function render(rows){
  queue.querySelectorAll("button[data-id]").forEach(b=>b.onclick=()=>updateStatus(b.dataset.id,b.dataset.status));
 }
 let rows=[];
+let realtimeChannel=null;
+let realtimeState="offline";
+function setRealtimeState(state){
+  realtimeState=state;
+  const el=document.getElementById("realtime-status");
+  if(el) el.textContent=state==="live"?"● مباشر":"○ غير متصل";
+  if(el) el.className="small "+(state==="live"?"ok":"muted");
+}
+function upsertRealtimeRow(row){
+  if(!row?.order_id)return;
+  const i=rows.findIndex(x=>x.order_id===row.order_id);
+  if(i>=0) rows[i]={...rows[i],...row}; else rows=[row,...rows];
+  render(rows);
+}
+function removeRealtimeRow(id){
+  rows=rows.filter(x=>x.order_id!==id);
+  render(rows);
+}
+function startRealtime(){
+  if(realtimeChannel) supabase.removeChannel(realtimeChannel);
+  realtimeChannel=supabase.channel("pastel-staff-orders")
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"pastel_orders"},payload=>{
+      upsertRealtimeRow(payload.new);
+      showMessage("طلب جديد وصل مباشرة.","ok");
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"pastel_orders"},payload=>{
+      upsertRealtimeRow(payload.new);
+      showMessage("تم تحديث طلب مباشرة.","ok");
+    })
+    .on("postgres_changes",{event:"DELETE",schema:"public",table:"pastel_orders"},payload=>{
+      removeRealtimeRow(payload.old?.order_id);
+    })
+    .subscribe(status=>{
+      if(status==="SUBSCRIBED") setRealtimeState("live");
+      else if(["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(status)) setRealtimeState("offline");
+    });
+}
 async function load(){
  showMessage("جاري تحميل الطلبات…");
  const {data,error}=await supabase.from("pastel_orders").select("order_id,status,items,created_at,updated_at").order("created_at",{ascending:false}).limit(100);
@@ -77,7 +114,7 @@ async function updateStatus(id,status){
 }
 document.getElementById("filter").onchange=()=>render(rows);
 document.getElementById("refresh").onclick=load;
-document.getElementById("logout").onclick=()=>supabase.auth.signOut();
+document.getElementById("logout").onclick=async()=>{ if(realtimeChannel) await supabase.removeChannel(realtimeChannel); realtimeChannel=null; await supabase.auth.signOut(); };
 document.getElementById("login-form").onsubmit=async e=>{
  e.preventDefault();
  const email=document.getElementById("email").value.trim().toLowerCase();
@@ -94,7 +131,7 @@ supabase.auth.onAuthStateChange(async (_event,session)=>{
  await load();
 });
 const {data:{session}}=await supabase.auth.getSession();
-if(session) await load();
+if(session){ await load(); startRealtime(); }
 </script>
 </body>
 </html>
