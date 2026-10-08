@@ -579,6 +579,18 @@ function openOrder(name,quantity=1){
   document.getElementById("order-panel").scrollIntoView({behavior:"smooth",block:"center"});
 }
 window.__PASTEL_OPEN_ORDER__=openOrder;
+window.__PASTEL_ADD_ORDER_ITEM__=()=>{
+  const name=document.getElementById("order-item-name")?.value.trim();
+  const quantity=Math.max(1,Number.parseInt(document.getElementById("order-item-qty")?.value||"1",10)||1);
+  const status=document.getElementById("order-status");
+  if(!name){status.textContent="اكتب اسم العنصر أولاً.";return}
+  const item=orderState.items.find(x=>x.name===name);
+  if(item)item.quantity+=quantity; else orderState.items.push({name,quantity});
+  document.getElementById("order-item-name").value="";
+  document.getElementById("order-item-qty").value="1";
+  status.textContent="تمت إضافة العنصر إلى الطلب.";
+  renderOrder();
+};
 document.getElementById("submit-order")?.addEventListener("click",async()=>{
   const status=document.getElementById("order-status");
   if(!orderState.items.length){status.textContent="أضف عنصراً قبل إرسال الطلب.";return}
