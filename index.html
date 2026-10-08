@@ -11,7 +11,14 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 .shell{width:min(1180px,100%);min-height:100vh;margin:auto;padding:14px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:14px}
 .card{border:1px solid #fff1;border-radius:28px;background:#16100dcc;box-shadow:0 30px 90px #0008;overflow:hidden}
 .host{position:relative;min-height:calc(100vh - 28px)}
-#avatar{position:absolute;inset:0;min-height:620px}
+#avatar{position:absolute;inset:0;min-height:620px;z-index:2}
+#live-cafe{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;background:#120d0a;opacity:0;transition:opacity .45s ease;filter:saturate(.92) contrast(1.02)}
+#live-cafe.live{opacity:1}
+.live-cafe-shade{position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(180deg,rgba(9,7,6,.10),rgba(9,7,6,.18) 55%,rgba(9,7,6,.42))}
+.live-cafe-badge{position:absolute;top:16px;left:16px;z-index:7;padding:8px 12px;border-radius:999px;background:rgba(9,7,6,.68);border:1px solid rgba(232,201,159,.35);font-size:10px;letter-spacing:.08em;opacity:0;transition:opacity .3s ease}
+.live-cafe-badge.live{opacity:1}
+.live-cafe-badge.live::before{content:"●";margin-left:6px;color:#9ee39e}
+
 .badge{position:absolute;top:16px;right:16px;z-index:5;padding:9px 13px;border-radius:999px;background:#0a0807cc;border:1px solid #e8c99f44;font-size:11px;letter-spacing:.08em}
 .status{position:absolute;bottom:16px;right:16px;left:16px;z-index:5;padding:10px 14px;border-radius:999px;background:#0b0908e8;border:1px solid #fff1;font-size:12px}.status.ok{opacity:0}.status.error{background:#54231dcc}
 .chat{padding:28px;align-self:center}.eyebrow{color:var(--accent);letter-spacing:.12em;font-size:12px;font-weight:800}h1{font-size:clamp(34px,5vw,58px);line-height:1.05;margin:12px 0;white-space:pre-line}p{color:#cfc4bb;line-height:1.75}
@@ -62,6 +69,9 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 <div class="shell">
 <section class="card host">
 <div class="badge">PASTEL HOST · REALISTIC 3D · LIVE CAFE</div>
+<video id="live-cafe" playsinline muted autoplay preload="metadata" aria-label="البث المباشر للمقهى"></video>
+<div class="live-cafe-shade"></div>
+<div id="live-cafe-badge" class="live-cafe-badge">LIVE · PASTEL CAFE</div>
 <div id="avatar"></div>
 <div class="floating-actions" aria-label="PASTEL actions">
   <button data-action="ask">اسأل Host</button>
@@ -113,7 +123,81 @@ window.__PASTEL_HOST_LOAD_ERROR__=null;
 const status=document.getElementById("status"), mount=document.getElementById("avatar");
 const scene=new THREE.Scene();
 const cafeWorld=buildPastelCafeWorld(THREE,scene);
-const camera=new THREE.PerspectiveCamera(30,1,.01,1000);
+const liveVideo=document.getElementById("live-cafe");
+const liveBadge=document.getElementById("live-cafe-badge");
+
+async function setupLiveCafe(){
+  const cfg=window.HOST_CONFIG?.environment?.liveCafe||{};
+  const result={enabled:!!cfg.enabled,protocol:cfg.protocol||"hls",url:cfg.url||"",state:"disabled",usingVirtualFallback:true};
+  if(!cfg.enabled||!cfg.url){
+    result.state="not-configured";
+    window.__PASTEL_HOST_VERIFY__.liveCafe=result;
+    return;
+  }
+  if(!liveVideo){
+    result.state="video-element-missing";
+    window.__PASTEL_HOST_VERIFY__.liveCafe=result;
+    return;
+  }
+  const url=String(cfg.url);
+  const protocol=String(cfg.protocol||"hls").toLowerCase();
+  liveVideo.muted=cfg.muted!==false;
+  liveVideo.playsInline=true;
+  liveVideo.autoplay=true;
+  liveVideo.loop=false;
+  liveVideo.style.objectFit=cfg.fit||"cover";
+
+  const markLive=()=>{
+    cafeWorld.world.visible=false;
+    liveVideo.classList.add("live");
+    liveBadge?.classList.add("live");
+    status.textContent="المضيف جاهز · LIVE CAFE";
+    status.classList.add("ok");
+    result.state="live";
+    result.usingVirtualFallback=false;
+    result.currentSrc=liveVideo.currentSrc||url;
+    window.__PASTEL_HOST_VERIFY__.liveCafe={...result,videoReadyState:liveVideo.readyState};
+  };
+  const fallback=(reason)=>{
+    cafeWorld.world.visible=true;
+    liveVideo.classList.remove("live");
+    liveBadge?.classList.remove("live");
+    result.state="fallback";
+    result.reason=reason;
+    result.usingVirtualFallback=true;
+    window.__PASTEL_HOST_VERIFY__.liveCafe=result;
+  };
+  liveVideo.addEventListener("playing",markLive,{once:true});
+  liveVideo.addEventListener("error",()=>fallback("stream_error"));
+  liveVideo.addEventListener("stalled",()=>{ if(result.state==="live") result.state="buffering"; });
+  liveVideo.addEventListener("waiting",()=>{ if(result.state==="live") result.state="buffering"; });
+  try{
+    if(protocol==="hls" && /.m3u8(?:$|[?#])/i.test(url) && !liveVideo.canPlayType("application/vnd.apple.mpegurl")){
+      const {default:Hls}=await import("https://cdn.jsdelivr.net/npm/hls.js@1.6.15/+esm");
+      if(!Hls.isSupported()) throw new Error("hls_not_supported");
+      const hls=new Hls({enableWorker:true,lowLatencyMode:true,backBufferLength:30,maxBufferLength:12});
+      hls.on(Hls.Events.ERROR,(_event,data)=>{
+        if(data?.fatal){
+          try{hls.destroy()}catch{}
+          fallback("hls_fatal_error");
+        }
+      });
+      hls.loadSource(url);
+      hls.attachMedia(liveVideo);
+      window.__PASTEL_LIVE_CAFE_HLS__=hls;
+    }else{
+      liveVideo.src=url;
+      liveVideo.load();
+    }
+    const playPromise=liveVideo.play();
+    if(playPromise?.catch)await playPromise.catch(()=>{});
+    result.state="connecting";
+    window.__PASTEL_HOST_VERIFY__.liveCafe=result;
+  }catch(error){
+    fallback(String(error?.message||error));
+  }
+}
+setupLiveCafe();(30,1,.01,1000);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
