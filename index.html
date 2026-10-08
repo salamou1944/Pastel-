@@ -135,12 +135,13 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   const box=new THREE.Box3().setFromObject(model), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
   model.position.sub(center);
   const baseY=model.position.y;
-  // Hospitality framing: show a real upper-body host, not a tiny full-body avatar.
-  const targetY=size.y*0.18;
-  const visibleHeight=size.y*0.78;
-  const dist=visibleHeight/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
-  camera.position.set(0,targetY,dist*1.08);
-  camera.lookAt(0,size.y*0.20,0);
+  // Full-body hospitality framing: the real host must be visible from head to shoes.
+  // The previous upper-body crop was intentional during early validation; production now
+  // frames the complete GLB while keeping a small cinematic margin.
+  const frameHeight=size.y*0.92;
+  const dist=frameHeight/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
+  camera.position.set(0,0,dist*1.12);
+  camera.lookAt(0,0,0);
 
   // Keep the host alive even before a full speech/lipsync provider is attached:
   // idle animation + subtle breathing + generic blink morph detection.
@@ -471,6 +472,8 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   const hostVerification={
     model:MODEL,
     intent:"idle",
+    framing:"full-body",
+    frame:null,
     audioLipsync:{
       mode:audioLipsync.mode,
       connected:audioLipsync.connected,
@@ -548,6 +551,32 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     const blink=blinkUntil>now?1:0;
     for(const [mesh,index] of blinkTargets) mesh.morphTargetInfluences[index]=blink;
     renderer.render(scene,camera);
+    if(now % 12 < 1){
+      const frameBox=new THREE.Box3().setFromObject(model);
+      const corners=[
+        new THREE.Vector3(frameBox.min.x,frameBox.min.y,frameBox.min.z),
+        new THREE.Vector3(frameBox.min.x,frameBox.min.y,frameBox.max.z),
+        new THREE.Vector3(frameBox.min.x,frameBox.max.y,frameBox.min.z),
+        new THREE.Vector3(frameBox.min.x,frameBox.max.y,frameBox.max.z),
+        new THREE.Vector3(frameBox.max.x,frameBox.min.y,frameBox.min.z),
+        new THREE.Vector3(frameBox.max.x,frameBox.min.y,frameBox.max.z),
+        new THREE.Vector3(frameBox.max.x,frameBox.max.y,frameBox.min.z),
+        new THREE.Vector3(frameBox.max.x,frameBox.max.y,frameBox.max.z)
+      ];
+      let minX=1,minY=1,maxX=0,maxY=0;
+      for(const p of corners){
+        p.project(camera);
+        const x=(p.x+1)/2,y=(1-p.y)/2;
+        minX=Math.min(minX,x);maxX=Math.max(maxX,x);
+        minY=Math.min(minY,y);maxY=Math.max(maxY,y);
+      }
+      window.__PASTEL_HOST_VERIFY__.frame={
+        minX,maxX,minY,maxY,
+        height:maxY-minY,
+        width:maxX-minX,
+        fullBodyVisible:minY>0.015&&maxY<0.985
+      };
+    }
   }
   animate();
 },ev=>{
