@@ -88,7 +88,7 @@ function removeRealtimeRow(id){
 function startRealtime(){
   if(realtimeChannel) supabase.removeChannel(realtimeChannel);
   setRealtimeState("connecting");
-  realtimeChannel=supabase.channel("pastel-staff-orders",{config:{private:true}})
+  realtimeChannel=supabase.channel("pastel-staff-orders")
     .on("system","*",payload=>{
       if(payload?.extension==="postgres_changes" && payload?.status==="ok") setRealtimeState("live","Postgres Changes subscription ready");
     })
