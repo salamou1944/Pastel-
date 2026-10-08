@@ -33,7 +33,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 .door-right{right:0;justify-content:flex-start;padding-left:5vw;border-right:0;border-left:1px solid #e7c99d33;transform-origin:right center;animation:doorRight 2s 1s cubic-bezier(.77,0,.18,1) forwards}
 .entry-host{position:absolute;z-index:2;width:min(38vw,430px);height:min(70vh,650px);min-width:260px;top:14%;display:grid;place-items:center;opacity:0;animation:hostReveal 1.2s 1.65s forwards}
 .host-glow{position:absolute;inset:8% 5%;border-radius:50%;background:radial-gradient(ellipse,#e7c99d44,transparent 65%);filter:blur(18px)}
-.host-silhouette{position:absolute;width:54%;height:72%;top:13%;border-radius:48% 48% 20% 20%;background:linear-gradient(180deg,#b58a6a,#493025 36%,#18110e 78%);filter:blur(3px);box-shadow:0 20px 80px #000b}
+ .host-silhouette{display:none}
 .entry-copy{position:absolute;bottom:2%;text-align:center;display:grid;gap:7px;direction:rtl;text-shadow:0 4px 25px #000}
 .entry-copy small{font-size:9px;letter-spacing:.25em;color:#d8bb99}
 .entry-copy strong{font:500 clamp(28px,4vw,52px)/1.05 Georgia,serif}
@@ -185,6 +185,50 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   }
   window.__PASTEL_HOST_INTENT__={set:setHostIntent,get:()=>hostIntent};
   const blinkTargets=[];
+  // Human-presence layer: use whatever facial blendshapes the real GLB exposes.
+  // Nothing is fabricated; each target is discovered by name and only animated
+  // when that target actually exists on the model.
+  const humanFace={smile:[],brow:[],blink:[],mouthOpen:[]};
+  const collectTargets=(map,patterns)=>{
+    model.traverse(o=>{
+      if(!o.morphTargetDictionary||!o.morphTargetInfluences)return;
+      for(const [name,index] of Object.entries(o.morphTargetDictionary)){
+        if(patterns.some(re=>re.test(name)))map.push({m:o,i:index});
+      }
+    });
+  };
+  const faceValue=(items,value)=>{
+    for(const x of items)x.m.morphTargetInfluences[x.i]=Math.max(0,Math.min(1,value));
+  };
+  collectTargets(humanFace.smile,[/smile/i,/mouth[_-]?smile/i,/lip[_-]?(corner|smile)/i]);
+  collectTargets(humanFace.brow,[/brow/i,/eyebrow/i]);
+  collectTargets(humanFace.blink,[/blink/i,/eye[_-]?close/i,/eyelid/i]);
+  collectTargets(humanFace.mouthOpen,[/jawOpen/i,/mouthOpen/i]);
+  let faceSmile=0,faceBrow=0,faceTilt=0;
+  let gazeSaccadeX=0,gazeSaccadeY=0,nextSaccade=performance.now()+1200;
+  let humanDoubleBlink=false;
+  let humanState="idle";
+  function setHumanState(state){
+    humanState=state||"idle";
+    if(window.__PASTEL_HOST_VERIFY__)window.__PASTEL_HOST_VERIFY__.humanState=humanState;
+  }
+  function chooseSaccade(now){
+    if(now<nextSaccade)return;
+    gazeSaccadeX=(Math.random()-.5)*.055;
+    gazeSaccadeY=(Math.random()-.5)*.035;
+    nextSaccade=now+2200+Math.random()*3200;
+  }
+  window.__PASTEL_HOST_HUMAN_BEHAVIOR__={
+    state:()=>humanState,
+    facialTargets:{
+      smile:humanFace.smile.length,
+      brow:humanFace.brow.length,
+      blink:humanFace.blink.length,
+      mouthOpen:humanFace.mouthOpen.length
+    },
+    gaze:"pointer+saccade",
+    procedural:"breathing+posture+head micro-motion"
+  };
   const ARKIT=["viseme_aa","viseme_CH","viseme_DD","viseme_E","viseme_FF","viseme_I","viseme_kk","viseme_nn","viseme_O","viseme_PP","viseme_RR","viseme_sil","viseme_SS","viseme_TH","viseme_U"];
   const V={a:"viseme_aa",e:"viseme_E",i:"viseme_I",o:"viseme_O",u:"viseme_U",b:"viseme_PP",m:"viseme_PP",p:"viseme_PP",f:"viseme_FF",v:"viseme_FF",d:"viseme_DD",t:"viseme_DD",n:"viseme_DD",l:"viseme_DD",k:"viseme_kk",g:"viseme_kk",c:"viseme_kk",q:"viseme_kk",s:"viseme_SS",z:"viseme_SS",x:"viseme_SS",r:"viseme_RR",w:"viseme_U",y:"viseme_I",h:"viseme_E",j:"viseme_CH",ا:"viseme_aa",أ:"viseme_aa",إ:"viseme_aa",آ:"viseme_aa",و:"viseme_U",ي:"viseme_I",ب:"viseme_PP",م:"viseme_PP",ف:"viseme_FF",ث:"viseme_TH",ذ:"viseme_TH",ت:"viseme_DD",د:"viseme_DD",ن:"viseme_DD",ل:"viseme_DD",ك:"viseme_kk",ق:"viseme_kk",ج:"viseme_CH",ش:"viseme_CH",س:"viseme_SS",ص:"viseme_SS",ز:"viseme_SS",ر:"viseme_RR",ه:"viseme_E",ح:"viseme_E",خ:"viseme_CH",ع:"viseme_aa",غ:"viseme_RR"};
   const morph=new Map(),jaw=new Map();
@@ -469,6 +513,9 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   let nextBlink=performance.now()+1800+Math.random()*2200, blinkUntil=0;
   status.textContent="المضيف جاهز · realistic-male · lipsync: "+lipsyncMode;
   status.classList.add("ok");
+  setHumanState("greeting");
+  setHostIntent("greeting");
+  setTimeout(()=>{if(!speaking)setHostIntent("idle");setHumanState("idle")},1450);
   const hostVerification={
     model:MODEL,
     intent:"idle",
@@ -492,6 +539,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     blinkTargets:blinkTargets.length
   };
   window.__PASTEL_HOST_VERIFY__=hostVerification;
+  window.__PASTEL_HOST_VERIFY__.humanBehavior=window.__PASTEL_HOST_HUMAN_BEHAVIOR__;
   window.__PASTEL_HOST_VERIFY__.ttsConfig={enabled:!!window.HOST_CONFIG?.tts?.enabled,endpoint:window.HOST_CONFIG?.tts?.endpoint||null};
   window.__PASTEL_HOST_VERIFY__.state="ready";
   window.__PASTEL_HOST_LIPSYNC_SAMPLE__=()=>({
@@ -533,13 +581,33 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     if(bones.rightShoulder&&baseR)bones.rightShoulder.rotation.z=baseR.z-breath*.65;
     lookX+=(targetLookX-lookX)*Math.min(1,dt*2.5);
     lookY+=(targetLookY-lookY)*Math.min(1,dt*2.5);
+    chooseSaccade(now);
+    const intentTilt=hostIntent==="thinking"?.035:hostIntent==="speaking"?.008:hostIntent==="greeting"?.018:0;
+    faceTilt+=(intentTilt-faceTilt)*Math.min(1,dt*2.2);
+    const targetGazeX=lookX+gazeSaccadeX;
+    const targetGazeY=lookY+gazeSaccadeY;
     if(headBone){
-      headBone.rotation.y=lookX;
-      headBone.rotation.x=lookY;
+      headBone.rotation.y=targetGazeX;
+      headBone.rotation.x=targetGazeY+faceTilt;
+      if(hostIntent==="speaking"&&nodTimer){
+        headBone.rotation.x+=Math.sin(now*0.012)*.018;
+      }
     }
     model.rotation.y=Math.sin(now*0.00025)*0.018;
     model.position.y=baseY+Math.sin(now*0.00115)*0.006;
-    if(now>=nextBlink){blinkUntil=now+130;nextBlink=now+1800+Math.random()*2800}
+    if(now>=nextBlink){
+      humanDoubleBlink=Math.random()<.14;
+      blinkUntil=now+120;
+      nextBlink=now+1900+Math.random()*3000;
+    }
+    if(humanDoubleBlink&&blinkUntil>now-260)blinkUntil=Math.max(blinkUntil,now+210);
+    const speakingFace=hostIntent==="speaking";
+    const thinkingFace=hostIntent==="thinking";
+    const greetingFace=hostIntent==="greeting";
+    faceSmile+=( (speakingFace?.10:greetingFace?.16:thinkingFace?.02:0.035)-faceSmile)*Math.min(1,dt*3.2);
+    faceBrow+=( (thinkingFace?.16:greetingFace?.06:0)-faceBrow)*Math.min(1,dt*3.0);
+    faceValue(humanFace.smile,faceSmile);
+    faceValue(humanFace.brow,faceBrow);
     if(nodTimer&&now>=nodTimer){
       nodTimer=0;
       if(nodAction){
@@ -550,6 +618,10 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     if(!speaking&&hostIntent!=="idle"&&hostIntent!=="thinking")setHostIntent("idle");
     const blink=blinkUntil>now?1:0;
     for(const [mesh,index] of blinkTargets) mesh.morphTargetInfluences[index]=blink;
+    if(humanFace.blink.length){
+      const naturalBlink=Math.max(blink,Math.min(1,(Math.sin(now*.018)>0.96?1:0)*.92));
+      faceValue(humanFace.blink,naturalBlink);
+    }
     renderer.render(scene,camera);
     if(now % 12 < 1){
       const frameBox=new THREE.Box3().setFromObject(model);
