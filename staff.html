@@ -75,11 +75,19 @@ function setRealtimeState(state,detail=""){
   }
   window.__PASTEL_STAFF_REALTIME__={state,detail,at:new Date().toISOString()};
 }
+function markRealtimeEvent(type,row){
+  window.__PASTEL_STAFF_REALTIME_EVENT__={type,orderId:row?.order_id||null,at:new Date().toISOString()};
+}
 function upsertRealtimeRow(row){
   if(!row?.order_id)return;
   const i=rows.findIndex(x=>x.order_id===row.order_id);
   if(i>=0) rows[i]={...rows[i],...row}; else rows=[row,...rows];
   render(rows);
+}
+function realtimeEvent(type,row,message){
+  markRealtimeEvent(type,row);
+  upsertRealtimeRow(row);
+  showMessage(message,"ok");
 }
 function removeRealtimeRow(id){
   rows=rows.filter(x=>x.order_id!==id);
@@ -101,7 +109,7 @@ function startRealtime(){
       showMessage("تم تحديث طلب مباشرة.","ok");
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"pastel_orders"},payload=>{
-      removeRealtimeRow(payload.old?.order_id);
+      markRealtimeEvent("DELETE",payload.old);\n      removeRealtimeRow(payload.old?.order_id);
     })
     .subscribe((status,err)=>{
       if(status==="SUBSCRIBED"){
