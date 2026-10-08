@@ -9,6 +9,7 @@ permissions:
   pages: write
   id-token: write
 concurrency:
+  # Re-run production validation after Staff Queue policy changes.
   group: pages
   cancel-in-progress: true
 jobs:
