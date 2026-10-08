@@ -1,5 +1,5 @@
 name: Deploy Pastel to GitHub Pages
-# Production trigger: keep Pages deployment tied to main changes.
+# Production trigger: keep Pages deployment tied to main changes. TTS v2 smoke uses live Supabase Edge Function.
 on:
   push:
     branches: [main]
