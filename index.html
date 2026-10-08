@@ -363,7 +363,6 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       return true;
     },
     useText(text){
-      speechSynthesis?.cancel();
       lipsync.stop();
       const next=makeTextLipsync(text);
       if(!next)return false;
@@ -591,9 +590,9 @@ async function speak(text){
   }
   diag.fallback=true;
   diag.fallbackMode="browser-speech+text-viseme";
-  hostLipsync?.useText?.(text);
-  if(!("speechSynthesis"in window))return;
+  if(!("speechSynthesis"in window)){hostLipsync?.useText?.(text);return;}
   speechSynthesis.cancel();
+  hostLipsync?.useText?.(text);
   const u=new SpeechSynthesisUtterance(text);
   u.lang=window.HOST_CONFIG?.language?.speech||"ar-DZ";
   u.rate=window.HOST_CONFIG?.language?.rate||.88;
