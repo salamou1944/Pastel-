@@ -227,12 +227,19 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     connected:false,
     source:null,
     analyser:false,
+    attempts:0,
+    lastError:null,
+    contextState:null,
     connect(el){
-      if(!el||typeof AudioContext==="undefined") return false;
+      this.attempts++;
+      this.lastError=null;
+      const AudioCtor=window.AudioContext||window.webkitAudioContext;
+      if(!el||!AudioCtor){this.lastError="AudioContext_unavailable";return false;}
       try{
         if(audioElement===el&&audioAnalyser)return true;
         this.disconnect();
-        audioCtx=audioCtx||new AudioContext();
+        audioCtx=audioCtx||new AudioCtor();
+        this.contextState=audioCtx.state;
         if(audioCtx.state==="suspended")audioCtx.resume().catch(()=>{});
         audioSource=audioCtx.createMediaElementSource(el);
         audioAnalyser=audioCtx.createAnalyser();
@@ -249,10 +256,12 @@ loader.setMeshoptDecoder(MeshoptDecoder);
         this.source=el.currentSrc||el.src||"media-element";
         this.analyser=true;
         if(window.__PASTEL_HOST_VERIFY__){
-          window.__PASTEL_HOST_VERIFY__.audioLipsync={mode:this.mode,connected:this.connected,analyser:this.analyser,source:this.source,preciseTimelineReady:true};
+          window.__PASTEL_HOST_VERIFY__.audioLipsync={mode:this.mode,connected:this.connected,analyser:this.analyser,source:this.source,attempts:this.attempts,lastError:this.lastError,contextState:this.contextState,preciseTimelineReady:true};
         }
         return true;
       }catch(err){
+        this.lastError=String(err?.message||err);
+        this.contextState=audioCtx?.state||null;
         console.warn("[PASTEL AUDIO LIPSYNC] connect failed",err);
         this.disconnect();
         return false;
@@ -264,6 +273,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       try{audioAnalyser?.disconnect()}catch{}
       audioSource=null;audioAnalyser=null;audioData=null;audioElement=null;
       this.connected=false;this.analyser=false;this.source=null;
+      this.contextState=audioCtx?.state||null;
       if(window.__PASTEL_HOST_VERIFY__){
         window.__PASTEL_HOST_VERIFY__.audioLipsync={mode:this.mode,connected:false,analyser:false,source:null,preciseTimelineReady:true};
       }
