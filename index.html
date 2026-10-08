@@ -72,7 +72,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 <video id="live-cafe" playsinline muted autoplay preload="metadata" aria-label="البث المباشر للمقهى"></video>
 <div class="live-cafe-shade"></div>
 <div id="live-cafe-badge" class="live-cafe-badge">LIVE · PASTEL CAFE</div>
-<div id="avatar"></div>
+<div id="avatar"><agent-3d id="pastel-agent" src="./assets/pastel-host.glb" clip="idle" kiosk eager mode="inline" style="display:block;width:100%;height:100%;"></agent-3d></div>
 <div class="floating-actions" aria-label="PASTEL actions">
   <button data-action="ask">اسأل Host</button>
   <button data-action="menu">القائمة</button>
@@ -110,658 +110,53 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 </div>
 <script src="./host-standard/config.js?v=20261007-tts1"></script>
 <script>window.__PASTEL_HOST_MODULE_BOOT__="pending";</script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@three-ws/avatar@0.2.3/+esm"></script>
 <script type="module">
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm";
-import {GLTFLoader} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js/+esm";
-import {MeshoptDecoder} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/libs/meshopt_decoder.module.js/+esm";
-import {buildPastelCafeWorld} from "./host-standard/pastel-cafe-world.js";
+const agent=document.getElementById("pastel-agent");
+const status=document.getElementById("status");
 
 window.__PASTEL_HOST_MODULE_BOOT__="started";
-const MODEL=window.HOST_CONFIG?.host?.modelUrl || "./assets/pastel-host.glb";
-window.__PASTEL_HOST_VERIFY__={model:MODEL,state:"loading",headBone:null,skeleton:0,animations:[]};
-window.__PASTEL_HOST_LOAD_ERROR__=null;
-const status=document.getElementById("status"), mount=document.getElementById("avatar");
-const scene=new THREE.Scene();
-const cafeWorld=buildPastelCafeWorld(THREE,scene);
-const liveVideo=document.getElementById("live-cafe");
-const liveBadge=document.getElementById("live-cafe-badge");
+window.__PASTEL_HOST_VERIFY__={
+  model:"./assets/pastel-host.glb",
+  runtime:"@three-ws/avatar@0.2.3",
+  framing:"full-body",
+  state:"loading",
+  animationRuntime:"three.ws retargeted animation runtime",
+  speech:"browser-speech+explicit-arabic-voice"
+};
 
-async function setupLiveCafe(){
-  const cfg=window.HOST_CONFIG?.environment?.liveCafe||{};
-  const result={enabled:!!cfg.enabled,protocol:cfg.protocol||"hls",url:cfg.url||"",state:"disabled",usingVirtualFallback:true};
-  if(!cfg.enabled||!cfg.url){
-    result.state="not-configured";
-    window.__PASTEL_HOST_VERIFY__.liveCafe=result;
-    return;
-  }
-  if(!liveVideo){
-    result.state="video-element-missing";
-    window.__PASTEL_HOST_VERIFY__.liveCafe=result;
-    return;
-  }
-  const url=String(cfg.url);
-  const protocol=String(cfg.protocol||"hls").toLowerCase();
-  liveVideo.muted=cfg.muted!==false;
-  liveVideo.playsInline=true;
-  liveVideo.autoplay=true;
-  liveVideo.loop=false;
-  liveVideo.style.objectFit=cfg.fit||"cover";
-
-  const markLive=()=>{
-    cafeWorld.world.visible=false;
-    liveVideo.classList.add("live");
-    liveBadge?.classList.add("live");
-    status.textContent="المضيف جاهز · LIVE CAFE";
-    status.classList.add("ok");
-    result.state="live";
-    result.usingVirtualFallback=false;
-    result.currentSrc=liveVideo.currentSrc||url;
-    window.__PASTEL_HOST_VERIFY__.liveCafe={...result,videoReadyState:liveVideo.readyState};
-  };
-  const fallback=(reason)=>{
-    cafeWorld.world.visible=true;
-    liveVideo.classList.remove("live");
-    liveBadge?.classList.remove("live");
-    result.state="fallback";
-    result.reason=reason;
-    result.usingVirtualFallback=true;
-    window.__PASTEL_HOST_VERIFY__.liveCafe=result;
-  };
-  liveVideo.addEventListener("playing",markLive,{once:true});
-  liveVideo.addEventListener("error",()=>fallback("stream_error"));
-  liveVideo.addEventListener("stalled",()=>{ if(result.state==="live") result.state="buffering"; });
-  liveVideo.addEventListener("waiting",()=>{ if(result.state==="live") result.state="buffering"; });
-  try{
-    if(protocol==="hls" && /.m3u8(?:$|[?#])/i.test(url) && !liveVideo.canPlayType("application/vnd.apple.mpegurl")){
-      const {default:Hls}=await import("https://cdn.jsdelivr.net/npm/hls.js@1.6.15/+esm");
-      if(!Hls.isSupported()) throw new Error("hls_not_supported");
-      const hls=new Hls({enableWorker:true,lowLatencyMode:true,backBufferLength:30,maxBufferLength:12});
-      hls.on(Hls.Events.ERROR,(_event,data)=>{
-        if(data?.fatal){
-          try{hls.destroy()}catch{}
-          fallback("hls_fatal_error");
-        }
-      });
-      hls.loadSource(url);
-      hls.attachMedia(liveVideo);
-      window.__PASTEL_LIVE_CAFE_HLS__=hls;
-    }else{
-      liveVideo.src=url;
-      liveVideo.load();
-    }
-    const playPromise=liveVideo.play();
-    if(playPromise?.catch)await playPromise.catch(()=>{});
-    result.state="connecting";
-    window.__PASTEL_HOST_VERIFY__.liveCafe=result;
-  }catch(error){
-    fallback(String(error?.message||error));
-  }
+function setHostStatus(text,ok=false){
+  if(status){status.textContent=text;if(ok)status.classList.add("ok");}
 }
-setupLiveCafe();
-const camera=new THREE.PerspectiveCamera(30,1,.01,1000);
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.outputColorSpace=THREE.SRGBColorSpace;
-renderer.setClearColor(0,0);
-mount.appendChild(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xffead0,0x24150f,2.2));
-const key=new THREE.DirectionalLight(0xffe4c5,3.0); key.position.set(2,4,4); scene.add(key);
-const fill=new THREE.DirectionalLight(0xd9e7ff,1.2); fill.position.set(-3,2,1); scene.add(fill);
-
-function resize(){const w=mount.clientWidth,h=mount.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}
-addEventListener("resize",resize); resize();
-
-const loader=new GLTFLoader();
-loader.setMeshoptDecoder(MeshoptDecoder);
-
-  loader.load(MODEL,g=>{
-  const model=g.scene;
-  window.__PASTEL_HOST_VERIFY__.state="loaded";
-  scene.add(model);
-  const box=new THREE.Box3().setFromObject(model), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
-  model.position.sub(center);
-  const baseY=model.position.y;
-  // Full-body hospitality framing: the real host must be visible from head to shoes.
-  // The previous upper-body crop was intentional during early validation; production now
-  // frames the complete GLB while keeping a small cinematic margin.
-  const frameHeight=size.y*0.92;
-  const dist=frameHeight/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
-  camera.position.set(0,0,dist*1.12);
-  camera.lookAt(0,0,0);
-
-  // Keep the host alive even before a full speech/lipsync provider is attached:
-  // idle animation + subtle breathing + generic blink morph detection.
-  const clock=new THREE.Clock();
-  // Collection reuse: three.ws already uses this same realistic-male rig for
-  // a black-suit bouncer. Reuse the rig and apply a hospitality-safe suit tint.
-  const SUIT_TINT=0x16161c;
-  model.traverse(o=>{
-    if(!o.isMesh || !/outfit|footwear/i.test(o.name||"")) return;
-    const dress=m=>{const c=m.clone(); if(c.color)c.color.setHex(SUIT_TINT); return c};
-    o.material=Array.isArray(o.material)?o.material.map(dress):dress(o.material);
-  });
-  const mixer=new THREE.AnimationMixer(model);
-  const clips=g.animations||[];
-  const idleClip=clips.find(c=>/idle|breath|stand|rest/i.test(c.name||"")) || clips[0];
-  const idleAction=idleClip?mixer.clipAction(idleClip).reset().setLoop(THREE.LoopRepeat):null;
-  if(idleAction)idleAction.play();
-  const nodClip=clips.find(c=>/nod|yes|agree/i.test(c.name||""));
-  const talkClip=clips.find(c=>/talk|speak/i.test(c.name||""));
-  const greetClip=clips.find(c=>/wave|greet|hello|welcome/i.test(c.name||""));
-  const thinkClip=clips.find(c=>/think|idle.*look|ponder/i.test(c.name||""));
-  const nodAction=nodClip?mixer.clipAction(nodClip):null;
-  const talkAction=talkClip?mixer.clipAction(talkClip):null;
-  const greetAction=greetClip?mixer.clipAction(greetClip):null;
-  const thinkAction=thinkClip?mixer.clipAction(thinkClip):null;
-  let activeGesture=null;
-  let hostIntent="idle";
-  function fadeAction(next,duration=.22){
-    if(next===activeGesture)return;
-    if(activeGesture)activeGesture.fadeOut(duration);
-    activeGesture=next||null;
-    if(activeGesture)activeGesture.reset().setLoop(THREE.LoopRepeat).fadeIn(duration).play();
-  }
-  function setHostIntent(intent){
-    hostIntent=intent;
-    if(intent==="speaking"&&talkAction){if(idleAction)idleAction.stop();fadeAction(talkAction)}
-    else if(intent==="thinking"&&thinkAction){if(idleAction)idleAction.stop();fadeAction(thinkAction)}
-    else if(intent==="greeting"&&greetAction){if(idleAction)idleAction.stop();fadeAction(greetAction)}
-    else {if(activeGesture)activeGesture.fadeOut(.22);activeGesture=null;if(idleAction&&!idleAction.isRunning())idleAction.reset().fadeIn(.22).play()}
-    if(window.__PASTEL_HOST_VERIFY__)window.__PASTEL_HOST_VERIFY__.intent=hostIntent;
-  }
-  window.__PASTEL_HOST_INTENT__={set:setHostIntent,get:()=>hostIntent};
-  const blinkTargets=[];
-  // Human-presence layer: use whatever facial blendshapes the real GLB exposes.
-  // Nothing is fabricated; each target is discovered by name and only animated
-  // when that target actually exists on the model.
-  const humanFace={smile:[],brow:[],blink:[],mouthOpen:[]};
-  const collectTargets=(map,patterns)=>{
-    model.traverse(o=>{
-      if(!o.morphTargetDictionary||!o.morphTargetInfluences)return;
-      for(const [name,index] of Object.entries(o.morphTargetDictionary)){
-        if(patterns.some(re=>re.test(name)))map.push({m:o,i:index});
-      }
-    });
-  };
-  const faceValue=(items,value)=>{
-    for(const x of items)x.m.morphTargetInfluences[x.i]=Math.max(0,Math.min(1,value));
-  };
-  collectTargets(humanFace.smile,[/smile/i,/mouth[_-]?smile/i,/lip[_-]?(corner|smile)/i]);
-  collectTargets(humanFace.brow,[/brow/i,/eyebrow/i]);
-  collectTargets(humanFace.blink,[/blink/i,/eye[_-]?close/i,/eyelid/i]);
-  collectTargets(humanFace.mouthOpen,[/jawOpen/i,/mouthOpen/i]);
-  let faceSmile=0,faceBrow=0,faceTilt=0;
-  let gazeSaccadeX=0,gazeSaccadeY=0,nextSaccade=performance.now()+1200;
-  let humanDoubleBlink=false;
-  let humanState="idle";
-  function setHumanState(state){
-    humanState=state||"idle";
-    if(window.__PASTEL_HOST_VERIFY__)window.__PASTEL_HOST_VERIFY__.humanState=humanState;
-  }
-  function chooseSaccade(now){
-    if(now<nextSaccade)return;
-    gazeSaccadeX=(Math.random()-.5)*.055;
-    gazeSaccadeY=(Math.random()-.5)*.035;
-    nextSaccade=now+2200+Math.random()*3200;
-  }
-  window.__PASTEL_HOST_HUMAN_BEHAVIOR__={
-    state:()=>humanState,
-    facialTargets:{
-      smile:humanFace.smile.length,
-      brow:humanFace.brow.length,
-      blink:humanFace.blink.length,
-      mouthOpen:humanFace.mouthOpen.length
-    },
-    gaze:"pointer+saccade",
-    procedural:"breathing+posture+head micro-motion"
-  };
-  const ARKIT=["viseme_aa","viseme_CH","viseme_DD","viseme_E","viseme_FF","viseme_I","viseme_kk","viseme_nn","viseme_O","viseme_PP","viseme_RR","viseme_sil","viseme_SS","viseme_TH","viseme_U"];
-  const V={a:"viseme_aa",e:"viseme_E",i:"viseme_I",o:"viseme_O",u:"viseme_U",b:"viseme_PP",m:"viseme_PP",p:"viseme_PP",f:"viseme_FF",v:"viseme_FF",d:"viseme_DD",t:"viseme_DD",n:"viseme_DD",l:"viseme_DD",k:"viseme_kk",g:"viseme_kk",c:"viseme_kk",q:"viseme_kk",s:"viseme_SS",z:"viseme_SS",x:"viseme_SS",r:"viseme_RR",w:"viseme_U",y:"viseme_I",h:"viseme_E",j:"viseme_CH",ا:"viseme_aa",أ:"viseme_aa",إ:"viseme_aa",آ:"viseme_aa",و:"viseme_U",ي:"viseme_I",ب:"viseme_PP",م:"viseme_PP",ف:"viseme_FF",ث:"viseme_TH",ذ:"viseme_TH",ت:"viseme_DD",د:"viseme_DD",ن:"viseme_DD",ل:"viseme_DD",ك:"viseme_kk",ق:"viseme_kk",ج:"viseme_CH",ش:"viseme_CH",س:"viseme_SS",ص:"viseme_SS",ز:"viseme_SS",ر:"viseme_RR",ه:"viseme_E",ح:"viseme_E",خ:"viseme_CH",ع:"viseme_aa",غ:"viseme_RR"};
-  const morph=new Map(),jaw=new Map();
-  model.traverse(o=>{
-    if(!o.morphTargetDictionary||!o.morphTargetInfluences)return;
-    for(const n of ARKIT)if(o.morphTargetDictionary[n]!==undefined){if(!morph.has(n))morph.set(n,[]);morph.get(n).push({m:o,i:o.morphTargetDictionary[n]})}
-    for(const n of ["jawOpen","mouthOpen"])if(o.morphTargetDictionary[n]!==undefined){if(!jaw.has(n))jaw.set(n,[]);jaw.get(n).push({m:o,i:o.morphTargetDictionary[n]})}
-  });
-  const lipsyncMode=morph.size?"viseme":jaw.size?"jaw":"none";
-  let headBone=null;
-  // three.ws-compatible head-bone discovery: accept common humanoid naming
-  // conventions (mixamorigHead, Armature:Head, rig_Head, CC_Base_Head, etc.)
-  // while excluding terminal helper bones such as HeadTop/HeadEnd.
-  // Prefer the actual head bone; fall back to common head markers only
-  // when the rig does not expose a cleaner humanoid head name.
-  let fallbackHead=null;
-  model.traverse(o=>{
-    if(!o.isBone)return;
-    const n=String(o.name||"");
-    if(!fallbackHead&&/head/i.test(n))fallbackHead=o;
-    if(headBone)return;
-    if(/(?:^|[:_])(?:head|cc_base_head|mixamorighead)$/i.test(n)||/^(head|headbone)$/i.test(n))headBone=o;
-  });
-  if(!headBone)headBone=fallbackHead;
-
-  // Procedural human micro-motion fallback for rigs that ship without animation clips.
-  // Subtle breathing and posture sway keep the Host alive without inventing GLB clips.
-  const bones={chest:null,spine:null,neck:null,leftShoulder:null,rightShoulder:null};
-  model.traverse(o=>{
-    if(!o.isBone)return;
-    const n=String(o.name||"").toLowerCase();
-    if(!bones.chest&&/(chest|upperchest)/.test(n))bones.chest=o;
-    if(!bones.spine&&/(spine2|spine1|spine)/.test(n))bones.spine=o;
-    if(!bones.neck&&/neck/.test(n))bones.neck=o;
-    if(!bones.leftShoulder&&/(left.*shoulder|shoulder.*left|l.*clavicle)/.test(n))bones.leftShoulder=o;
-    if(!bones.rightShoulder&&/(right.*shoulder|shoulder.*right|r.*clavicle)/.test(n))bones.rightShoulder=o;
-  });
-  const proceduralBase=new Map();
-  for(const bone of Object.values(bones))if(bone)proceduralBase.set(bone,{x:bone.rotation.x,y:bone.rotation.y,z:bone.rotation.z});
-  window.__PASTEL_HOST_PROCEDURAL_MOTION__={
-    enabled:true,
-    bones:Object.fromEntries(Object.entries(bones).map(([k,v])=>[k,v?.name||null]))
-  };
-
-  let lookX=0,lookY=0,targetLookX=0,targetLookY=0;
-  addEventListener("pointermove",e=>{
-    targetLookX=((e.clientX/innerWidth)-0.5)*0.22;
-    targetLookY=((e.clientY/innerHeight)-0.5)*-0.10;
-  },{passive:true});
-  // Audio-driven lipsync path:
-  // connectAudioElement(<audio>) routes the real waveform through Web Audio
-  // instead of guessing mouth timing from text. SpeechSynthesis remains the
-  // deterministic fallback because browsers do not expose its rendered audio
-  // as a portable MediaElement/AnalyserNode source.
-  let audioCtx=null;
-  let audioSource=null;
-  let audioAnalyser=null;
-  let audioData=null;
-  let audioElement=null;
-  let audioFrame=null;
-  const audioLipsync={
-    mode:"unavailable",
-    connected:false,
-    source:null,
-    analyser:false,
-    attempts:0,
-    lastError:null,
-    contextState:null,
-    connect(el){
-      this.attempts++;
-      this.lastError=null;
-      const AudioCtor=window.AudioContext||window.webkitAudioContext;
-      if(!el||!AudioCtor){this.lastError="AudioContext_unavailable";return false;}
-      try{
-        if(audioElement===el&&audioAnalyser)return true;
-        this.disconnect();
-        audioCtx=audioCtx||new AudioCtor();
-        this.contextState=audioCtx.state;
-        if(audioCtx.state==="suspended")audioCtx.resume().catch(()=>{});
-        audioSource=audioCtx.createMediaElementSource(el);
-        audioAnalyser=audioCtx.createAnalyser();
-        audioAnalyser.fftSize=256;
-        audioAnalyser.smoothingTimeConstant=.72;
-        audioAnalyser.minDecibels=-85;
-        audioAnalyser.maxDecibels=-15;
-        audioData=new Uint8Array(audioAnalyser.frequencyBinCount);
-        audioSource.connect(audioAnalyser);
-        audioAnalyser.connect(audioCtx.destination);
-        audioElement=el;
-        this.mode="audio-frequency";
-        this.connected=true;
-        this.source=el.currentSrc||el.src||"media-element";
-        this.analyser=true;
-        if(window.__PASTEL_HOST_VERIFY__){
-          window.__PASTEL_HOST_VERIFY__.audioLipsync={mode:this.mode,connected:this.connected,analyser:this.analyser,source:this.source,attempts:this.attempts,lastError:this.lastError,contextState:this.contextState,preciseTimelineReady:true};
-        }
-        return true;
-      }catch(err){
-        this.lastError=String(err?.message||err);
-        this.contextState=audioCtx?.state||null;
-        console.warn("[PASTEL AUDIO LIPSYNC] connect failed",err);
-        this.disconnect();
-        return false;
-      }
-    },
-    disconnect(){
-      if(audioFrame){cancelAnimationFrame(audioFrame);audioFrame=null}
-      try{audioSource?.disconnect()}catch{}
-      try{audioAnalyser?.disconnect()}catch{}
-      audioSource=null;audioAnalyser=null;audioData=null;audioElement=null;
-      this.connected=false;this.analyser=false;this.source=null;
-      this.contextState=audioCtx?.state||null;
-      if(window.__PASTEL_HOST_VERIFY__){
-        window.__PASTEL_HOST_VERIFY__.audioLipsync={mode:this.mode,connected:false,analyser:false,source:null,preciseTimelineReady:true};
-      }
-      if(this.mode==="audio-frequency")this.mode="unavailable";
-    },
-    tick(){
-      if(!audioAnalyser||!audioData||!audioElement||audioElement.paused||audioElement.ended)return false;
-      audioAnalyser.getByteFrequencyData(audioData);
-      const n=audioData.length;
-      const band=(from,to)=>{
-        let sum=0,count=0;
-        for(let i=Math.max(0,Math.floor(n*from));i<Math.min(n,Math.ceil(n*to));i++){sum+=audioData[i];count++}
-        return count?sum/count/255:0;
-      };
-      const low=band(0,.16),mid=band(.16,.42),high=band(.42,.82);
-      const energy=Math.min(1,low*.55+mid*.30+high*.15);
-      if(lipsyncMode==="viseme"){
-        const weights={
-          viseme_aa:Math.min(1,low*1.55),
-          viseme_O:Math.min(1,low*1.25),
-          viseme_E:Math.min(1,mid*1.35),
-          viseme_I:Math.min(1,mid*1.15),
-          viseme_SS:Math.min(1,high*1.55),
-          viseme_FF:Math.min(1,high*1.25),
-          viseme_CH:Math.min(1,(mid+high)*.8),
-          viseme_PP:energy<.08?0.48:0
-        };
-        for(const [name,items] of morph)for(const x of items){
-          const target=weights[name]||0;
-          x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.72+target*.28;
-        }
-      }else if(lipsyncMode==="jaw"){
-        for(const items of jaw.values())for(const x of items)
-          x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.70+Math.min(1,energy*1.35)*.30;
-      }
-      return true;
-    }
-  };
-  // Optional precise viseme timeline path. A TTS provider can supply
-  // Oculus/ARKit viseme IDs + start/duration in milliseconds; this avoids
-  // guessing phonemes from text and is more accurate than frequency bands.
-  const visemeAlias={
-    aa:"viseme_aa",E:"viseme_E",I:"viseme_I",O:"viseme_O",U:"viseme_U",
-    PP:"viseme_PP",SS:"viseme_SS",TH:"viseme_TH",CH:"viseme_CH",FF:"viseme_FF",
-    kk:"viseme_kk",nn:"viseme_nn",RR:"viseme_RR",DD:"viseme_DD",sil:"viseme_sil"
-  };
-  function makeVisemeTimeline(timeline){
-    const frames=(Array.isArray(timeline)?timeline:[]).map(x=>({
-      v:visemeAlias[x.viseme]||x.viseme,
-      s:Number(x.start??x.time??x.vtime??0),
-      e:Number(x.end??((x.start??x.time??x.vtime??0)+(x.duration??x.vduration??80)))
-    })).filter(x=>x.v&&Number.isFinite(x.s)&&Number.isFinite(x.e)&&x.e>x.s);
-    return {
-      start:performance.now(),
-      tick(now){
-        const elapsed=now-this.start;
-        let active=null;
-        for(const f of frames)if(elapsed>=f.s&&elapsed<f.e){active=f.v;break}
-        for(const [name,items] of morph)for(const x of items)
-          x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.58+(name===active ? .92 : 0)*.42;
-        if(lipsyncMode==="jaw"&&active)for(const items of jaw.values())for(const x of items)
-          x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.55+.45*.35;
-      },
-      stop(){
-        if(lipsyncMode==="viseme")for(const items of morph.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
-        if(lipsyncMode==="jaw")for(const items of jaw.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
-        if(talkAction)talkAction.stop();
-        speaking=false;
-        setHostIntent("idle");
-      }
-    };
-  }
-  function makeTextLipsync(text){
-    const next=makeLipsync(text);
-    if(!next)return null;
-    next.tick(performance.now());
-    return {mode:"text-viseme",tick:next.tick,stop:next.stop};
-  }
-  window.PASTEL_AUDIO_LIPSYNC=audioLipsync;
-  window.PASTEL_HOST_LIPSYNC={
-    useVisemeTimeline(timeline){
-      speechSynthesis?.cancel();
-      lipsync.stop();
-      const next=makeVisemeTimeline(timeline);
-      if(!next)return false;
-      lipsync=next;
-      if(talkAction){setHostIntent("speaking");speaking=true}
-      return true;
-    },
-    useText(text){
-      lipsync.stop();
-      const next=makeTextLipsync(text);
-      if(!next)return false;
-      lipsync=next;
-      const first=V[[...String(text||"")].find(ch=>V[ch])]||"ا";
-      for(const [name,items] of morph){for(const x of items)x.m.morphTargetInfluences[x.i]=name===first?0.72:0;}
-      next.tick(performance.now());
-      if(window.__PASTEL_HOST_VERIFY__) window.__PASTEL_HOST_VERIFY__.textVisemeActive=[...morph.values()].flatMap(items=>items.map(x=>Number(x.m.morphTargetInfluences[x.i]||0))).filter(v=>v>0.01).length;
-      setHostIntent("speaking"); speaking=true;
-      return true;
-    },
-    useAudioElement(el){
-      speechSynthesis?.cancel();
-      lipsync.stop();
-      const next=makeAudioLipsync(el);
-      if(!next)return false;
-      lipsync=next;
-      if(talkAction){if(idleAction)idleAction.stop();talkAction.reset().setLoop(THREE.LoopRepeat).play();speaking=true}
-      return true;
-    }
-  };
-  let lipsync={tick:()=>{},stop:()=>{}};
-  function activateViseme(name="viseme_aa",weight=.72){
-    const requested=String(name||"viseme_aa");
-    let matched=0,readBack=0;
-    for(const [target,items] of morph){
-      for(const x of items){
-        const value=target===requested?weight:0;
-        x.m.morphTargetInfluences[x.i]=value;
-        if(target===requested){matched++;if(Number(x.m.morphTargetInfluences[x.i]||0)>0)readBack++;}
-      }
-    }
-    const result={requested,matched,readBack,mode:lipsyncMode};
-    if(window.__PASTEL_HOST_VERIFY__){window.__PASTEL_HOST_VERIFY__.directVisemeTest=result;window.__PASTEL_HOST_VERIFY__.textVisemeActive=readBack;}
-    return result;
-  }
-  window.__PASTEL_HOST_VISEME_TEST__=activateViseme;
-  let speaking=false;
-  let nodTimer=0;
-  function makeAudioLipsync(el){
-    if(!audioLipsync.connect(el))return null;
-    return {
-      start:performance.now(),
-      tick(){audioLipsync.tick()},
-      stop(){
-        if(lipsyncMode==="viseme")for(const items of morph.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
-        if(lipsyncMode==="jaw")for(const items of jaw.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
-        audioLipsync.disconnect();
-        if(talkAction){talkAction.stop();speaking=false}
-        if(idleAction&&!idleAction.isRunning())idleAction.reset().play();
-      }
-    };
-  }
-  function makeLipsync(text){
-    const seq=[];let t=0;for(const ch of String(text||"").toLowerCase()){const v=V[ch];if(v){seq.push({v,s:t,e:t+80});t+=80}else if(/\s/.test(ch))t+=100}
-    const map=lipsyncMode==="viseme"?morph:jaw;
-    return {
-      start:performance.now(),
-      tick(now){
-        const el=now-this.start;let active=null;
-        for(const p of seq)if(el>=p.s&&el<p.e){active=p.v;break}
-        for(const [name,items] of map){
-          const val=lipsyncMode==="viseme"?(name===active?0.92:0):(active?0.55:0);
-          for(const x of items)x.m.morphTargetInfluences[x.i]=val;
-        }
-      },
-      stop(){
-        for(const items of map.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0;
-        if(talkAction){talkAction.stop();speaking=false}
-        if(idleAction&&!idleAction.isRunning())idleAction.reset().play();
-      }
-    };
-  }
-  model.traverse(o=>{
-    if(!o.morphTargetDictionary||!o.morphTargetInfluences)return;
-    for(const [name,index] of Object.entries(o.morphTargetDictionary)){
-      if(/blink|eye.*close|eyes.*close/i.test(name)) blinkTargets.push([o,index]);
-    }
-  });
-  let nextBlink=performance.now()+1800+Math.random()*2200, blinkUntil=0;
-  status.textContent="المضيف جاهز · realistic-male · lipsync: "+lipsyncMode;
-  status.classList.add("ok");
-  setHumanState("greeting");
-  setHostIntent("greeting");
-  setTimeout(()=>{if(!speaking)setHostIntent("idle");setHumanState("idle")},1450);
-  const hostVerification={
-    model:MODEL,
-    intent:"idle",
-    framing:"full-body",
-    frame:null,
-    audioLipsync:{
-      mode:audioLipsync.mode,
-      connected:audioLipsync.connected,
-      analyser:audioLipsync.analyser,
-      preciseTimelineReady:true
-    },
-    skeleton:model.getObjectByProperty("type","SkinnedMesh")?.skeleton?.bones?.length||0,
-    headBone:headBone?.name||null,
-    animations:clips.map(c=>c.name),
-    idle:idleClip?.name||null,
-    talk:talkClip?.name||null,
-    nod:nodClip?.name||null,
-    lipsync:lipsyncMode,
-    visemeTargets:[...morph.keys()],
-    jawTargets:[...jaw.keys()],
-    blinkTargets:blinkTargets.length
-  };
-  window.__PASTEL_HOST_VERIFY__=hostVerification;
-  window.__PASTEL_HOST_VERIFY__.humanBehavior=window.__PASTEL_HOST_HUMAN_BEHAVIOR__;
-  window.__PASTEL_HOST_VERIFY__.ttsConfig={enabled:!!window.HOST_CONFIG?.tts?.enabled,endpoint:window.HOST_CONFIG?.tts?.endpoint||null};
+agent?.addEventListener("agent:ready",()=>{
   window.__PASTEL_HOST_VERIFY__.state="ready";
-  window.__PASTEL_HOST_LIPSYNC_SAMPLE__=()=>({
-    mode:lipsyncMode,
-    audioConnected:!!audioLipsync.connected,
-    active:!!audioLipsync.active,
-    values:[...morph.entries()].flatMap(([name,items])=>items.map(x=>({name,value:Number(x.m.morphTargetInfluences[x.i]||0)}))).filter(x=>x.value>0.01).slice(0,20),
-    jaw:[...jaw.entries()].flatMap(([name,items])=>items.map(x=>({name,value:Number(x.m.morphTargetInfluences[x.i]||0)}))).filter(x=>x.value>0.01).slice(0,20)
-  });
-
-  console.info("[PASTEL HOST VERIFY]",hostVerification);
-  console.info("[PASTEL HOST]",{
-    model:MODEL,
-    animations:clips.map(c=>c.name),
-    idle:idleClip?.name||null,
-    talk:talkClip?.name||null,
-    nod:nodClip?.name||null,
-    lipsync:lipsyncMode,
-    blinkTargets:blinkTargets.length
-  });
-  function animate(){
-    requestAnimationFrame(animate);
-    const now=performance.now(), dt=clock.getDelta();
-    cafeWorld.clock();
-    mixer.update(dt);
-    lipsync.tick(now);
-
-    // Bounded breathing/posture micro-motion for animation-less realistic rigs.
-    const breath=Math.sin(now*0.00165)*0.008;
-    const sway=Math.sin(now*0.00072)*0.004;
-    const baseChest=proceduralBase.get(bones.chest);
-    const baseSpine=proceduralBase.get(bones.spine);
-    const baseNeck=proceduralBase.get(bones.neck);
-    const baseL=proceduralBase.get(bones.leftShoulder);
-    const baseR=proceduralBase.get(bones.rightShoulder);
-    if(bones.chest&&baseChest){bones.chest.rotation.x=baseChest.x+breath;bones.chest.rotation.y=baseChest.y+sway}
-    if(bones.spine&&baseSpine){bones.spine.rotation.x=baseSpine.x+breath*.55;bones.spine.rotation.y=baseSpine.y+sway*.7}
-    if(bones.neck&&baseNeck)bones.neck.rotation.z=baseNeck.z+sway*.35;
-    if(bones.leftShoulder&&baseL)bones.leftShoulder.rotation.z=baseL.z+breath*.65;
-    if(bones.rightShoulder&&baseR)bones.rightShoulder.rotation.z=baseR.z-breath*.65;
-    lookX+=(targetLookX-lookX)*Math.min(1,dt*2.5);
-    lookY+=(targetLookY-lookY)*Math.min(1,dt*2.5);
-    chooseSaccade(now);
-    const intentTilt=hostIntent==="thinking"?.035:hostIntent==="speaking"?.008:hostIntent==="greeting"?.018:0;
-    faceTilt+=(intentTilt-faceTilt)*Math.min(1,dt*2.2);
-    const targetGazeX=lookX+gazeSaccadeX;
-    const targetGazeY=lookY+gazeSaccadeY;
-    if(headBone){
-      headBone.rotation.y=targetGazeX;
-      headBone.rotation.x=targetGazeY+faceTilt;
-      if(hostIntent==="speaking"&&nodTimer){
-        headBone.rotation.x+=Math.sin(now*0.012)*.018;
-      }
-    }
-    model.rotation.y=Math.sin(now*0.00025)*0.018;
-    model.position.y=baseY+Math.sin(now*0.00115)*0.006;
-    if(now>=nextBlink){
-      humanDoubleBlink=Math.random()<.14;
-      blinkUntil=now+120;
-      nextBlink=now+1900+Math.random()*3000;
-    }
-    if(humanDoubleBlink&&blinkUntil>now-260)blinkUntil=Math.max(blinkUntil,now+210);
-    const speakingFace=hostIntent==="speaking";
-    const thinkingFace=hostIntent==="thinking";
-    const greetingFace=hostIntent==="greeting";
-    faceSmile+=( (speakingFace?.10:greetingFace?.16:thinkingFace?.02:0.035)-faceSmile)*Math.min(1,dt*3.2);
-    faceBrow+=( (thinkingFace?.16:greetingFace?.06:0)-faceBrow)*Math.min(1,dt*3.0);
-    faceValue(humanFace.smile,faceSmile);
-    faceValue(humanFace.brow,faceBrow);
-    if(nodTimer&&now>=nodTimer){
-      nodTimer=0;
-      if(nodAction){
-        nodAction.reset().setLoop(THREE.LoopOnce).clampWhenFinished=true;
-        nodAction.play();
-      }
-    }
-    if(!speaking&&hostIntent!=="idle"&&hostIntent!=="thinking")setHostIntent("idle");
-    const blink=blinkUntil>now?1:0;
-    for(const [mesh,index] of blinkTargets) mesh.morphTargetInfluences[index]=blink;
-    if(humanFace.blink.length){
-      const naturalBlink=Math.max(blink,Math.min(1,(Math.sin(now*.018)>0.96?1:0)*.92));
-      faceValue(humanFace.blink,naturalBlink);
-    }
-    renderer.render(scene,camera);
-    if(now % 12 < 1){
-      const frameBox=new THREE.Box3().setFromObject(model);
-      const corners=[
-        new THREE.Vector3(frameBox.min.x,frameBox.min.y,frameBox.min.z),
-        new THREE.Vector3(frameBox.min.x,frameBox.min.y,frameBox.max.z),
-        new THREE.Vector3(frameBox.min.x,frameBox.max.y,frameBox.min.z),
-        new THREE.Vector3(frameBox.min.x,frameBox.max.y,frameBox.max.z),
-        new THREE.Vector3(frameBox.max.x,frameBox.min.y,frameBox.min.z),
-        new THREE.Vector3(frameBox.max.x,frameBox.min.y,frameBox.max.z),
-        new THREE.Vector3(frameBox.max.x,frameBox.max.y,frameBox.min.z),
-        new THREE.Vector3(frameBox.max.x,frameBox.max.y,frameBox.max.z)
-      ];
-      let minX=1,minY=1,maxX=0,maxY=0;
-      for(const p of corners){
-        p.project(camera);
-        const x=(p.x+1)/2,y=(1-p.y)/2;
-        minX=Math.min(minX,x);maxX=Math.max(maxX,x);
-        minY=Math.min(minY,y);maxY=Math.max(maxY,y);
-      }
-      window.__PASTEL_HOST_VERIFY__.frame={
-        minX,maxX,minY,maxY,
-        height:maxY-minY,
-        width:maxX-minX,
-        fullBodyVisible:minY>0.015&&maxY<0.985
-      };
-    }
-  }
-  animate();
-},ev=>{
-  if(ev.total) status.textContent="جاري تحميل المضيف… "+Math.round(ev.loaded/ev.total*100)+"%";
-},err=>{
-  console.error("[PASTEL HOST LOAD ERROR]",err);
-  window.__PASTEL_HOST_LOAD_ERROR__=String(err?.message||err);
-  window.__PASTEL_HOST_VERIFY__={...window.__PASTEL_HOST_VERIFY__,state:"error",loadError:window.__PASTEL_HOST_LOAD_ERROR__};
-  status.textContent="تعذر تشغيل المضيف ثلاثي الأبعاد. الحوار ما زال يعمل.";
-  status.classList.add("error");
+  window.__PASTEL_HOST_VERIFY__.agentReady=true;
+  window.__PASTEL_HOST_VERIFY__.framing="full-body";
+  setHostStatus("المضيف جاهز · رجل واقعي كامل الجسم · حركة مضيف حقيقية",true);
+  try{agent.lookAt("user")}catch{}
+  setTimeout(()=>{try{agent.wave({style:"professional"})}catch{}},250);
 });
 
-const orderState={items:[]};
+agent?.addEventListener("agent:error",(e)=>{
+  window.__PASTEL_HOST_VERIFY__.state="error";
+  window.__PASTEL_HOST_VERIFY__.error=String(e?.detail?.message||e?.message||"agent_error");
+  setHostStatus("تعذر تشغيل المضيف ثلاثي الأبعاد.",false);
+});
+
 function renderOrder(){
   const box=document.getElementById("order-lines");
   if(!box)return;
   box.innerHTML=orderState.items.length
-    ? orderState.items.map((x,i)=>'<div class="order-line"><span>'+escapeHtml(x.name)+'</span><strong>'+x.quantity+'</strong></div>').join("")
+    ? orderState.items.map(x=>'<div class="order-line"><span>'+escapeHtml(x.name)+'</span><strong>'+x.quantity+'</strong></div>').join("")
     : '<div class="note">لم تتم إضافة عناصر بعد.</div>';
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+const orderState={items:[]};
 function openOrder(name,quantity=1){
   if(name){
     const item=orderState.items.find(x=>x.name===name);
-    if(item)item.quantity+=quantity; else orderState.items.push({name,quantity});
+    if(item)item.quantity+=quantity;else orderState.items.push({name,quantity});
   }
   document.getElementById("order-panel").hidden=false;
   renderOrder();
@@ -771,29 +166,28 @@ window.__PASTEL_OPEN_ORDER__=openOrder;
 window.__PASTEL_ADD_ORDER_ITEM__=()=>{
   const name=document.getElementById("order-item-name")?.value.trim();
   const quantity=Math.max(1,Number.parseInt(document.getElementById("order-item-qty")?.value||"1",10)||1);
-  const status=document.getElementById("order-status");
-  if(!name){status.textContent="اكتب اسم العنصر أولاً.";return}
+  const s=document.getElementById("order-status");
+  if(!name){s.textContent="اكتب اسم العنصر أولاً.";return}
   const item=orderState.items.find(x=>x.name===name);
-  if(item)item.quantity+=quantity; else orderState.items.push({name,quantity});
+  if(item)item.quantity+=quantity;else orderState.items.push({name,quantity});
   document.getElementById("order-item-name").value="";
   document.getElementById("order-item-qty").value="1";
-  status.textContent="تمت إضافة العنصر إلى الطلب.";
+  s.textContent="تمت إضافة العنصر إلى الطلب.";
   renderOrder();
 };
+
 document.getElementById("submit-order")?.addEventListener("click",async()=>{
-  const status=document.getElementById("order-status");
-  if(!orderState.items.length){status.textContent="أضف عنصراً قبل إرسال الطلب.";return}
+  const s=document.getElementById("order-status");
+  if(!orderState.items.length){s.textContent="أضف عنصراً قبل إرسال الطلب.";return}
   const endpoint=window.HOST_CONFIG?.order?.apiEndpoint;
-  if(!endpoint){status.textContent="الطلب جاهز للإرسال، لكن واجهة الطلب الإنتاجية غير مربوطة بعد. لن نعرض تأكيداً وهمياً.";return}
-  status.textContent="جارٍ إرسال الطلب…";
+  if(!endpoint){s.textContent="واجهة الطلب الإنتاجية غير مربوطة بعد. لن نعرض تأكيداً وهمياً.";return}
+  s.textContent="جارٍ إرسال الطلب…";
   try{
     const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:orderState.items,createdAt:new Date().toISOString()})});
     const data=await response.json().catch(()=>({}));
     if(!response.ok||!data.orderId)throw new Error("order_not_confirmed");
-    status.textContent="تم تأكيد الطلب رقم "+data.orderId;
-  }catch(error){
-    status.textContent="تعذر تأكيد الطلب. لم يتم تسجيله كطلب مؤكد.";
-  }
+    s.textContent="تم تأكيد الطلب رقم "+data.orderId;
+  }catch{ s.textContent="تعذر تأكيد الطلب. لم يتم تسجيله كطلب مؤكد."; }
 });
 
 const Q=[
@@ -805,55 +199,47 @@ const Q=[
 ["الأسعار","الأسعار الكاملة غير مثبتة في قاعدة المعرفة الحالية، لذلك لن أخمّنها."]
 ];
 let last="";
-for(const [label,text] of Q){const b=document.createElement("button");b.textContent=label;b.onclick=()=>{last=text;document.getElementById("answer").textContent=text;setHostIntent?.("thinking");setTimeout(()=>speak(text),180)};document.getElementById("questions").appendChild(b)}
-window.__PASTEL_SPEAK_DIAG__=window.__PASTEL_SPEAK_DIAG__||{calls:0,ttsBranch:0,endpoint:null,lastError:null,fallback:false};
-async function speak(text){
-  const diag=window.__PASTEL_SPEAK_DIAG__;
-  diag.calls++;
-  const cfg=window.HOST_CONFIG?.tts;
-  diag.endpoint=cfg?.endpoint||null;
-  const hostLipsync=window.PASTEL_HOST_LIPSYNC;
-  if(cfg?.enabled&&cfg.endpoint){
-    diag.ttsBranch++;
-    speechSynthesis?.cancel();
-    hostLipsync?.stop?.();
-    try{
-      const response=await fetch(cfg.endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
-      const data=await response.json();
-      if(!response.ok||!data?.ok||!data?.audioBase64)throw new Error("tts_not_confirmed");
-      const audio=new Audio("data:"+String(data.format||"audio/webm;codecs=opus")+";base64,"+data.audioBase64);
-      audio.preload="auto";
-      const stop=()=>hostLipsync?.stop?.();
-      audio.onended=stop;
-      audio.onerror=stop;
-      if(hostLipsync?.useAudioElement?.(audio)){
-        window.__PASTEL_HOST_INTENT__?.set?.("speaking");
-        await audio.play();
-        return;
-      }
-      throw new Error("audio_lipsync_unavailable");
-    }catch(error){
-      diag.lastError=String(error?.message||error);
-      console.warn("[PASTEL TTS] remote audio failed; using browser speech fallback",error);
-    }
-  }
-  diag.fallback=true;
-  diag.fallbackMode="browser-speech+text-viseme";
-  if(!("speechSynthesis"in window)){hostLipsync?.useText?.(text);return;}
-  speechSynthesis.cancel();
-  hostLipsync?.useText?.(text);
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang=window.HOST_CONFIG?.language?.speech||"ar-DZ";
-  u.rate=window.HOST_CONFIG?.language?.rate||.88;
-  u.pitch=window.HOST_CONFIG?.language?.pitch||1;
-  u.onend=()=>{hostLipsync?.stop?.();window.__PASTEL_HOST_INTENT__?.set?.("idle")};
-  u.onerror=()=>{hostLipsync?.stop?.();window.__PASTEL_HOST_INTENT__?.set?.("idle")};
-  speechSynthesis.speak(u);
+for(const [label,text] of Q){
+  const b=document.createElement("button");
+  b.textContent=label;
+  b.onclick=()=>{last=text;document.getElementById("answer").textContent=text;try{agent?.lookAt("user");agent?.nod()}catch{};setTimeout(()=>speak(text),180)};
+  document.getElementById("questions").appendChild(b);
+}
+
+function pickArabicMaleVoice(){
+  const voices=window.speechSynthesis?.getVoices?.()||[];
+  const preferred=["maged","majid","tarik","hicham","google arabic","arabic"];
+  return voices.find(v=>v.lang?.toLowerCase()==="ar-sa" && /maged/i.test(v.name))
+      || voices.find(v=>preferred.some(n=>v.name?.toLowerCase().includes(n)) && /^ar-/i.test(v.lang||""))
+      || voices.find(v=>/^ar-(dz|sa|ma|tn|ae|eg)/i.test(v.lang||"") && !/female|zira|sara/i.test(v.name||""))
+      || voices.find(v=>/^ar-/i.test(v.lang||""))
+      || null;
+}
+function speak(text){
+  const clean=String(text||"").trim();
+  if(!clean)return;
+  speechSynthesis?.cancel();
+  try{agent?.lookAt("user");agent?.play("talk")}catch{}
+  const u=new SpeechSynthesisUtterance(clean);
+  const v=pickArabicMaleVoice();
+  if(v)u.voice=v;
+  u.lang=v?.lang||"ar-SA";
+  u.rate=0.90;
+  u.pitch=0.88;
+  u.volume=1;
+  u.onend=()=>{try{agent?.play("idle")}catch{}};
+  u.onerror=()=>{try{agent?.play("idle")}catch{}};
+  speechSynthesis?.speak(u);
+  window.__PASTEL_SPEAK_DIAG__={calls:(window.__PASTEL_SPEAK_DIAG__?.calls||0)+1,voice:v?.name||null,lang:u.lang,rate:u.rate,pitch:u.pitch,runtime:"three-ws-avatar"};
 }
 window.__PASTEL_SPEAK__=speak;
 document.getElementById("speak").onclick=()=>last&&speak(last);
-document.getElementById("stop").onclick=()=>{speechSynthesis?.cancel();window.PASTEL_HOST_LIPSYNC?.stop?.();window.__PASTEL_HOST_INTENT__?.set?.("idle")};
-document.getElementById("wa").href="https://wa.me/213541332877";document.getElementById("call").href="tel:+213541332877";document.getElementById("email").href="mailto:sarl.pastel.pastry@gmail.com";document.getElementById("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Résidence El Chourouk, Akid Lotfi, Oran 31000, Algeria");
+document.getElementById("stop").onclick=()=>{speechSynthesis?.cancel();try{agent?.play("idle")}catch{}};
+
+document.getElementById("wa").href="https://wa.me/213541332877";
+document.getElementById("call").href="tel:+213541332877";
+document.getElementById("email").href="mailto:sarl.pastel.pastry@gmail.com";
+document.getElementById("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Résidence El Chourouk, Akid Lotfi, Oran 31000, Algeria");
 </script>
 <script>
 const addOrderItem=document.getElementById("add-order-item");
