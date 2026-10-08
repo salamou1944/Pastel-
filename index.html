@@ -370,7 +370,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       const next=makeTextLipsync(text);
       if(!next)return false;
       lipsync=next;
-      const first=V[[...String(text||"")].find(ch=>V[ch]]||"ا"];
+      const first=V[[...String(text||"")].find(ch=>V[ch])]||"ا";
       for(const [name,items] of morph){for(const x of items)x.m.morphTargetInfluences[x.i]=name===first?0.72:0;}
       next.tick(performance.now());
       if(window.__PASTEL_HOST_VERIFY__) window.__PASTEL_HOST_VERIFY__.textVisemeActive=[...morph.values()].flatMap(items=>items.map(x=>Number(x.m.morphTargetInfluences[x.i]||0))).filter(v=>v>0.01).length;
