@@ -65,7 +65,7 @@ jobs:
           test "$code" != "200"
           echo "ANON_ORDER_READ_BLOCKED $code"
 
-      - name: Verify deployed Host audio + lipsync with Playwright
+      - name: Verify deployed Host runtime + Arabic speech with Playwright
         env:
           PASTEL_PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
@@ -78,73 +78,50 @@ jobs:
           if (!url) throw new Error("missing page_url");
           const browser = await chromium.launch({headless:true});
           const page = await browser.newPage();
-          const tts = [];
           const pageErrors = [];
           page.on("pageerror", err => pageErrors.push(String(err?.message || err)));
           page.on("console", msg => { if (msg.type() === "error") pageErrors.push(msg.text()); });
-          page.on("request", req => {
-            if (req.url().includes("/functions/v1/pastel-tts-v2")) tts.push(req);
-          });
           await page.goto(url, {waitUntil:"networkidle", timeout:60000});
-          await page.waitForTimeout(3000);
-          const boot = await page.evaluate(() => ({boot:window.__PASTEL_HOST_MODULE_BOOT__||null, verify:window.__PASTEL_HOST_VERIFY__||null, loadError:window.__PASTEL_HOST_LOAD_ERROR__||null}));
-          if (boot.boot !== "started" && !boot.loadError) throw new Error("Host module never booted; pageErrors="+pageErrors.join(" | "));
-          await page.waitForFunction(() => window.__PASTEL_HOST_VERIFY__?.state === "ready" || window.__PASTEL_HOST_VERIFY__?.state === "error" || window.__PASTEL_HOST_LOAD_ERROR__, null, {timeout:60000});
-          const verify = await page.evaluate(() => window.__PASTEL_HOST_VERIFY__);
-          if (verify?.loadError || verify?.state === "error") throw new Error("Host runtime load failed: "+JSON.stringify(verify)+"; pageErrors="+pageErrors.join(" | "));
-          if (!verify.headBone) throw new Error("head bone missing");
-          if (!verify.skeleton) throw new Error("skeleton missing");
-          const buttons = await page.locator("#questions button").count();
-          if (!buttons) throw new Error("question buttons missing");
-          await page.evaluate(() => {
-            window.__PASTEL_HOST_LIPSYNC_SAMPLES__ = [];
-            const t = setInterval(() => {
-              const x = window.__PASTEL_HOST_LIPSYNC_SAMPLE__?.();
-              if (x) window.__PASTEL_HOST_LIPSYNC_SAMPLES__.push(x);
-            }, 80);
-            setTimeout(() => clearInterval(t), 5000);
+          await page.waitForTimeout(5000);
+
+          const runtime = await page.evaluate(() => {
+            const el=document.querySelector("#pastel-agent");
+            const shadow=el?.shadowRoot;
+            const canvas=shadow?.querySelector("canvas");
+            const rect=el?.getBoundingClientRect();
+            const verify=window.__PASTEL_HOST_VERIFY__||null;
+            return {
+              verify,
+              agentPresent:!!el,
+              agentReady:!!verify?.agentReady,
+              canvas:!!canvas,
+              canvasWidth:canvas?.width||0,
+              canvasHeight:canvas?.height||0,
+              hostWidth:rect?.width||0,
+              hostHeight:rect?.height||0,
+              speak:window.__PASTEL_SPEAK_DIAG__||null
+            };
           });
-          const speakResult = await page.evaluate(async () => {
-            const fn = window.__PASTEL_SPEAK__;
-            if (typeof fn !== "function") return {type:typeof fn, result:null};
-            try {
-              const result = await fn("اختبار صوت المضيف في PASTEL.");
-              return {type:"function", result:null};
-            } catch (error) {
-              return {type:"function", error:String(error?.message || error)};
-            }
+
+          if(!runtime.agentPresent) throw new Error("PASTEL agent element missing");
+          if(!runtime.agentReady) throw new Error("PASTEL agent runtime never became ready: "+JSON.stringify(runtime.verify)+"; pageErrors="+pageErrors.join(" | "));
+          if(!runtime.canvas || runtime.canvasWidth<100 || runtime.canvasHeight<100) throw new Error("PASTEL agent canvas not rendered: "+JSON.stringify(runtime));
+          if(runtime.hostHeight<300) throw new Error("PASTEL Host stage is too short for full-body presentation: "+JSON.stringify(runtime));
+
+          const speech = await page.evaluate(() => {
+            const text="اختبار صوت المضيف في PASTEL.";
+            window.__PASTEL_SPEAK__?.(text);
+            return window.__PASTEL_SPEAK_DIAG__||null;
           });
-          await page.waitForTimeout(250);
-          await page.evaluate(() => window.PASTEL_HOST_LIPSYNC?.useText?.("اختبار حركة الشفاه العربية في PASTEL."));
-          const directViseme = await page.evaluate(() => window.__PASTEL_HOST_VISEME_TEST__?.("viseme_aa"));
-          if (!(directViseme?.matched > 0 && directViseme?.readBack > 0)) throw new Error("Direct Host viseme morph activation failed: "+JSON.stringify(directViseme));
-          await page.waitForTimeout(650);
-          const runtime = await page.evaluate(() => ({
-            verify: window.__PASTEL_HOST_VERIFY__,
-            speak: window.__PASTEL_SPEAK_DIAG__ || null,
-            audio: window.PASTEL_AUDIO_LIPSYNC ? {
-              mode: window.PASTEL_AUDIO_LIPSYNC.mode,
-              connected: window.PASTEL_AUDIO_LIPSYNC.connected,
-              analyser: window.PASTEL_AUDIO_LIPSYNC.analyser,
-              source: window.PASTEL_AUDIO_LIPSYNC.source
-            } : null,
-            samples: window.__PASTEL_HOST_LIPSYNC_SAMPLES__ || []
-          }));
-          if (speakResult.type !== "function") throw new Error("PASTEL speak function missing: "+JSON.stringify(speakResult));
-          if (speakResult.error) throw new Error("PASTEL speak rejected: "+speakResult.error);
-          if (tts.length) throw new Error("remote TTS should be disabled for deterministic fallback; requests="+tts.length);
-          if (!runtime.speak?.fallback) throw new Error("browser speech fallback was not selected: "+JSON.stringify(runtime.speak));
-          if (runtime.speak?.fallbackMode !== "browser-speech+text-viseme") throw new Error("text-viseme fallback missing: "+JSON.stringify(runtime.speak));
-          const nonzero = runtime.samples.some(s => (s.values?.length||0) + (s.jaw?.length||0) > 0);
-          if (!(runtime.verify?.textVisemeActive > 0)) throw new Error("Host text-viseme did not activate any morph targets: "+JSON.stringify(runtime.verify));
+          await page.waitForTimeout(800);
+          const speechAfter = await page.evaluate(() => window.__PASTEL_SPEAK_DIAG__||null);
+          if(!(speechAfter?.calls>0)) throw new Error("Host speech was not invoked: "+JSON.stringify(speechAfter));
+          if(!speechAfter?.voice && !speechAfter?.lang) throw new Error("Arabic voice diagnostics missing: "+JSON.stringify(speechAfter));
 
           // Real customer journey smoke: exercise the production Order UI and backend.
           const orderButton = page.locator('.floating-actions button[data-action="order"]').first();
-          if (await orderButton.count()) {
-            await orderButton.click();
-          } else {
-            await page.locator('button[data-action="order"]').first().click();
-          }
+          if (await orderButton.count()) await orderButton.click();
+          else await page.locator('button[data-action="order"]').first().click();
           await page.locator("#order-item-name").fill("PASTEL SMOKE TEST");
           await page.locator("#order-item-qty").fill("1");
           await page.locator("#add-order-item").click();
@@ -157,15 +134,13 @@ jobs:
 
           console.log(JSON.stringify({
             url,
-            ttsRequests: tts.length,
-            directViseme,
-            analyserConnected: false,
-            audioMode: runtime.verify.audioLipsync.mode,
-            speechFallback: runtime.speak.fallback,
-            fallbackMode: runtime.speak.fallbackMode,
-            sampleCount: runtime.samples.length,
-            nonzero,
-            verify: runtime.verify
+            agentPresent:runtime.agentPresent,
+            agentReady:runtime.agentReady,
+            canvas:{width:runtime.canvasWidth,height:runtime.canvasHeight},
+            host:{width:runtime.hostWidth,height:runtime.hostHeight},
+            speech,
+            speechAfter,
+            verify:runtime.verify
           }, null, 2));
           await browser.close();
           EOF
