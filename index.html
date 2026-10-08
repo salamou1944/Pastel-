@@ -578,6 +578,7 @@ function openOrder(name,quantity=1){
   renderOrder();
   document.getElementById("order-panel").scrollIntoView({behavior:"smooth",block:"center"});
 }
+window.__PASTEL_OPEN_ORDER__=openOrder;
 document.getElementById("submit-order")?.addEventListener("click",async()=>{
   const status=document.getElementById("order-status");
   if(!orderState.items.length){status.textContent="أضف عنصراً قبل إرسال الطلب.";return}
