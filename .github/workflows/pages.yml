@@ -75,10 +75,20 @@ jobs:
             }, 80);
             setTimeout(() => clearInterval(t), 5000);
           });
-          await page.locator("#questions button").first().click();
+          const speakResult = await page.evaluate(async () => {
+            const fn = window.__PASTEL_SPEAK__;
+            if (typeof fn !== "function") return {type:typeof fn, result:null};
+            try {
+              const result = await fn("اختبار صوت المضيف في PASTEL.");
+              return {type:"function", result:null};
+            } catch (error) {
+              return {type:"function", error:String(error?.message || error)};
+            }
+          });
           await page.waitForTimeout(3500);
           const runtime = await page.evaluate(() => ({
             verify: window.__PASTEL_HOST_VERIFY__,
+            speak: window.__PASTEL_SPEAK_DIAG__ || null,
             audio: window.PASTEL_AUDIO_LIPSYNC ? {
               mode: window.PASTEL_AUDIO_LIPSYNC.mode,
               connected: window.PASTEL_AUDIO_LIPSYNC.connected,
@@ -87,7 +97,9 @@ jobs:
             } : null,
             samples: window.__PASTEL_HOST_LIPSYNC_SAMPLES__ || []
           }));
-          if (!tts.length) throw new Error("TTS endpoint was not requested");
+          if (speakResult.type !== "function") throw new Error("PASTEL speak function missing: "+JSON.stringify(speakResult));
+          if (speakResult.error) throw new Error("PASTEL speak rejected: "+speakResult.error);
+          if (!tts.length) throw new Error("TTS endpoint was not requested; speakDiag="+JSON.stringify(runtime.speak));
           if (!runtime.audio?.analyser) throw new Error("audio analyser never connected");
           const nonzero = runtime.samples.some(s => (s.values?.length||0) + (s.jaw?.length||0) > 0);
           if (!nonzero) throw new Error("no observed non-zero lip/jaw morph during real audio");
