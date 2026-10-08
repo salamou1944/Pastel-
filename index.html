@@ -208,6 +208,26 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     if(/(?:^|[:_])(?:head|cc_base_head|mixamorighead)$/i.test(n)||/^(head|headbone)$/i.test(n))headBone=o;
   });
   if(!headBone)headBone=fallbackHead;
+
+  // Procedural human micro-motion fallback for rigs that ship without animation clips.
+  // Subtle breathing and posture sway keep the Host alive without inventing GLB clips.
+  const bones={chest:null,spine:null,neck:null,leftShoulder:null,rightShoulder:null};
+  model.traverse(o=>{
+    if(!o.isBone)return;
+    const n=String(o.name||"").toLowerCase();
+    if(!bones.chest&&/(chest|upperchest)/.test(n))bones.chest=o;
+    if(!bones.spine&&/(spine2|spine1|spine)/.test(n))bones.spine=o;
+    if(!bones.neck&&/neck/.test(n))bones.neck=o;
+    if(!bones.leftShoulder&&/(left.*shoulder|shoulder.*left|l.*clavicle)/.test(n))bones.leftShoulder=o;
+    if(!bones.rightShoulder&&/(right.*shoulder|shoulder.*right|r.*clavicle)/.test(n))bones.rightShoulder=o;
+  });
+  const proceduralBase=new Map();
+  for(const bone of Object.values(bones))if(bone)proceduralBase.set(bone,{x:bone.rotation.x,y:bone.rotation.y,z:bone.rotation.z});
+  window.__PASTEL_HOST_PROCEDURAL_MOTION__={
+    enabled:true,
+    bones:Object.fromEntries(Object.entries(bones).map(([k,v])=>[k,v?.name||null]))
+  };
+
   let lookX=0,lookY=0,targetLookX=0,targetLookY=0;
   addEventListener("pointermove",e=>{
     targetLookX=((e.clientX/innerWidth)-0.5)*0.22;
@@ -494,6 +514,20 @@ loader.setMeshoptDecoder(MeshoptDecoder);
     const now=performance.now(), dt=clock.getDelta();
     mixer.update(dt);
     lipsync.tick(now);
+
+    // Bounded breathing/posture micro-motion for animation-less realistic rigs.
+    const breath=Math.sin(now*0.00165)*0.008;
+    const sway=Math.sin(now*0.00072)*0.004;
+    const baseChest=proceduralBase.get(bones.chest);
+    const baseSpine=proceduralBase.get(bones.spine);
+    const baseNeck=proceduralBase.get(bones.neck);
+    const baseL=proceduralBase.get(bones.leftShoulder);
+    const baseR=proceduralBase.get(bones.rightShoulder);
+    if(bones.chest&&baseChest){bones.chest.rotation.x=baseChest.x+breath;bones.chest.rotation.y=baseChest.y+sway}
+    if(bones.spine&&baseSpine){bones.spine.rotation.x=baseSpine.x+breath*.55;bones.spine.rotation.y=baseSpine.y+sway*.7}
+    if(bones.neck&&baseNeck)bones.neck.rotation.z=baseNeck.z+sway*.35;
+    if(bones.leftShoulder&&baseL)bones.leftShoulder.rotation.z=baseL.z+breath*.65;
+    if(bones.rightShoulder&&baseR)bones.rightShoulder.rotation.z=baseR.z-breath*.65;
     lookX+=(targetLookX-lookX)*Math.min(1,dt*2.5);
     lookY+=(targetLookY-lookY)*Math.min(1,dt*2.5);
     if(headBone){
