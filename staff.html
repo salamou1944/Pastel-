@@ -109,7 +109,8 @@ function startRealtime(){
       showMessage("تم تحديث طلب مباشرة.","ok");
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"pastel_orders"},payload=>{
-      markRealtimeEvent("DELETE",payload.old);\n      removeRealtimeRow(payload.old?.order_id);
+      markRealtimeEvent("DELETE",payload.old);
+      removeRealtimeRow(payload.old?.order_id);
     })
     .subscribe((status,err)=>{
       if(status==="SUBSCRIBED"){
