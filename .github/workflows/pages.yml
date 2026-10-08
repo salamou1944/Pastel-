@@ -105,7 +105,7 @@ jobs:
           if (!runtime.speak?.fallback) throw new Error("browser speech fallback was not selected: "+JSON.stringify(runtime.speak));
           if (runtime.speak?.fallbackMode !== "browser-speech+text-viseme") throw new Error("text-viseme fallback missing: "+JSON.stringify(runtime.speak));
           const nonzero = runtime.samples.some(s => (s.values?.length||0) + (s.jaw?.length||0) > 0);
-          if (!nonzero) throw new Error("no observed non-zero lip/jaw morph during text-viseme fallback");
+          if (!(runtime.verify?.textVisemeActive > 0)) throw new Error("Host text-viseme did not activate any morph targets: "+JSON.stringify(runtime.verify));
           console.log(JSON.stringify({
             url,
             ttsRequests: tts.length,
