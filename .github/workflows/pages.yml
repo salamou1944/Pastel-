@@ -87,6 +87,8 @@ jobs:
           });
           await page.waitForTimeout(250);
           await page.evaluate(() => window.PASTEL_HOST_LIPSYNC?.useText?.("اختبار حركة الشفاه العربية في PASTEL."));
+          const directViseme = await page.evaluate(() => window.__PASTEL_HOST_VISEME_TEST__?.("viseme_aa"));
+          if (!(directViseme?.matched > 0 && directViseme?.readBack > 0)) throw new Error("Direct Host viseme morph activation failed: "+JSON.stringify(directViseme));
           await page.waitForTimeout(650);
           const runtime = await page.evaluate(() => ({
             verify: window.__PASTEL_HOST_VERIFY__,
@@ -109,6 +111,7 @@ jobs:
           console.log(JSON.stringify({
             url,
             ttsRequests: tts.length,
+            directViseme,
             analyserConnected: false,
             audioMode: runtime.verify.audioLipsync.mode,
             speechFallback: runtime.speak.fallback,
