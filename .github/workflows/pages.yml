@@ -73,9 +73,9 @@ jobs:
           await page.waitForTimeout(3000);
           const boot = await page.evaluate(() => ({boot:window.__PASTEL_HOST_MODULE_BOOT__||null, verify:window.__PASTEL_HOST_VERIFY__||null, loadError:window.__PASTEL_HOST_LOAD_ERROR__||null}));
           if (boot.boot !== "started" && !boot.loadError) throw new Error("Host module never booted; pageErrors="+pageErrors.join(" | "));
-          await page.waitForFunction(() => window.__PASTEL_HOST_VERIFY__?.headBone || window.__PASTEL_HOST_LOAD_ERROR__, null, {timeout:30000});
+          await page.waitForFunction(() => window.__PASTEL_HOST_VERIFY__?.state === "ready" || window.__PASTEL_HOST_VERIFY__?.state === "error" || window.__PASTEL_HOST_LOAD_ERROR__, null, {timeout:60000});
           const verify = await page.evaluate(() => window.__PASTEL_HOST_VERIFY__);
-          if (verify?.loadError) throw new Error("Host runtime load failed: "+verify.loadError+"; pageErrors="+pageErrors.join(" | "));
+          if (verify?.loadError || verify?.state === "error") throw new Error("Host runtime load failed: "+JSON.stringify(verify)+"; pageErrors="+pageErrors.join(" | "));
           if (!verify.headBone) throw new Error("head bone missing");
           if (!verify.skeleton) throw new Error("skeleton missing");
           const buttons = await page.locator("#questions button").count();
