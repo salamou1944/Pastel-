@@ -85,7 +85,8 @@ jobs:
               return {type:"function", error:String(error?.message || error)};
             }
           });
-          await page.waitForTimeout(3500);
+          await page.waitForFunction(() => window.PASTEL_AUDIO_LIPSYNC?.analyser === true, null, {timeout:10000});
+          await page.waitForTimeout(700);
           const runtime = await page.evaluate(() => ({
             verify: window.__PASTEL_HOST_VERIFY__,
             speak: window.__PASTEL_SPEAK_DIAG__ || null,
@@ -100,13 +101,14 @@ jobs:
           if (speakResult.type !== "function") throw new Error("PASTEL speak function missing: "+JSON.stringify(speakResult));
           if (speakResult.error) throw new Error("PASTEL speak rejected: "+speakResult.error);
           if (!tts.length) throw new Error("TTS endpoint was not requested; speakDiag="+JSON.stringify(runtime.speak));
-          if (!runtime.audio?.analyser) throw new Error("audio analyser never connected");
+          const analyserObserved = runtime.samples.some(s => s.audioConnected === true);
+          if (!analyserObserved && !runtime.audio?.analyser) throw new Error("audio analyser never observed; speakDiag="+JSON.stringify(runtime.speak)+"; audio="+JSON.stringify(runtime.audio));
           const nonzero = runtime.samples.some(s => (s.values?.length||0) + (s.jaw?.length||0) > 0);
           if (!nonzero) throw new Error("no observed non-zero lip/jaw morph during real audio");
           console.log(JSON.stringify({
             url,
             ttsRequests: tts.length,
-            analyserConnected: runtime.audio.analyser,
+            analyserConnected: analyserObserved || !!runtime.audio?.analyser,
             audioMode: runtime.verify.audioLipsync.mode,
             sampleCount: runtime.samples.length,
             nonzero,
