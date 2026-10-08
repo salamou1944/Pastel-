@@ -349,6 +349,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
   function makeTextLipsync(text){
     const next=makeLipsync(text);
     if(!next)return null;
+    next.tick(performance.now());
     return {mode:"text-viseme",tick:next.tick,stop:next.stop};
   }
   window.PASTEL_AUDIO_LIPSYNC=audioLipsync;
