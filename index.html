@@ -99,11 +99,13 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 </section>
 </div>
 <script src="./host-standard/config.js?v=20261007-tts1"></script>
+<script>window.__PASTEL_HOST_MODULE_BOOT__="pending";</script>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm";
 import {GLTFLoader} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js/+esm";
 import {MeshoptDecoder} from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/libs/meshopt_decoder.module.js/+esm";
 
+window.__PASTEL_HOST_MODULE_BOOT__="started";
 const MODEL=window.HOST_CONFIG?.host?.modelUrl || "./assets/pastel-host.glb";
 window.__PASTEL_HOST_VERIFY__={model:MODEL,state:"loading",headBone:null,skeleton:0,animations:[]};
 window.__PASTEL_HOST_LOAD_ERROR__=null;
