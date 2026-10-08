@@ -531,20 +531,22 @@ async function speak(text){
   diag.calls++;
   const cfg=window.HOST_CONFIG?.tts;
   diag.endpoint=cfg?.endpoint||null;
+  const hostLipsync=window.PASTEL_HOST_LIPSYNC;
   if(cfg?.enabled&&cfg.endpoint){
     diag.ttsBranch++;
-    speechSynthesis?.cancel();lipsync.stop();
+    speechSynthesis?.cancel();
+    hostLipsync?.stop?.();
     try{
       const response=await fetch(cfg.endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
       const data=await response.json();
       if(!response.ok||!data?.ok||!data?.audioBase64)throw new Error("tts_not_confirmed");
       const audio=new Audio("data:"+String(data.format||"audio/webm;codecs=opus")+";base64,"+data.audioBase64);
       audio.preload="auto";
-      audio.onended=()=>lipsync.stop();
-      audio.onerror=()=>lipsync.stop();
-      if(window.PASTEL_HOST_LIPSYNC?.useAudioElement(audio)){
-            setHostIntent("speaking");
-        nodTimer=performance.now()+420;
+      const stop=()=>hostLipsync?.stop?.();
+      audio.onended=stop;
+      audio.onerror=stop;
+      if(hostLipsync?.useAudioElement?.(audio)){
+        window.__PASTEL_HOST_INTENT__?.set?.("speaking");
         await audio.play();
         return;
       }
@@ -556,17 +558,20 @@ async function speak(text){
   }
   diag.fallback=true;
   if(!("speechSynthesis"in window))return;
-  // Deterministic fallback only. This is NOT presented as audio-driven lipsync.
-  speechSynthesis.cancel();lipsync.stop();
-  lipsync=makeLipsync(text);
-  if(talkAction){if(idleAction)idleAction.stop();talkAction.reset().setLoop(THREE.LoopRepeat).play();speaking=true}
-  nodTimer=performance.now()+420;
+  speechSynthesis.cancel();
+  hostLipsync?.stop?.();
+  window.__PASTEL_HOST_INTENT__?.set?.("speaking");
   const u=new SpeechSynthesisUtterance(text);
-  u.lang=window.HOST_CONFIG?.language?.speech||"ar-DZ";u.rate=window.HOST_CONFIG?.language?.rate||.88;u.pitch=window.HOST_CONFIG?.language?.pitch||1;
-  u.onend=()=>lipsync.stop();u.onerror=()=>lipsync.stop();speechSynthesis.speak(u)
+  u.lang=window.HOST_CONFIG?.language?.speech||"ar-DZ";
+  u.rate=window.HOST_CONFIG?.language?.rate||.88;
+  u.pitch=window.HOST_CONFIG?.language?.pitch||1;
+  u.onend=()=>{hostLipsync?.stop?.();window.__PASTEL_HOST_INTENT__?.set?.("idle")};
+  u.onerror=()=>{hostLipsync?.stop?.();window.__PASTEL_HOST_INTENT__?.set?.("idle")};
+  speechSynthesis.speak(u);
 }
 window.__PASTEL_SPEAK__=speak;
-document.getElementById("speak").onclick=()=>last&&speak(last);document.getElementById("stop").onclick=()=>{speechSynthesis?.cancel();lipsync.stop();nodTimer=0;setHostIntent?.("idle")};
+document.getElementById("speak").onclick=()=>last&&speak(last);
+document.getElementById("stop").onclick=()=>{speechSynthesis?.cancel();window.PASTEL_HOST_LIPSYNC?.stop?.();window.__PASTEL_HOST_INTENT__?.set?.("idle")};
 document.getElementById("wa").href="https://wa.me/213541332877";document.getElementById("call").href="tel:+213541332877";document.getElementById("email").href="mailto:sarl.pastel.pastry@gmail.com";document.getElementById("maps").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Résidence El Chourouk, Akid Lotfi, Oran 31000, Algeria");
 </script>
 <script>
