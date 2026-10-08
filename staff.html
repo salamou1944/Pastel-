@@ -102,11 +102,11 @@ function startRealtime(){
     })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"pastel_orders"},payload=>{
       upsertRealtimeRow(payload.new);
-      showMessage("طلب جديد وصل مباشرة.","ok");
+      realtimeEvent("INSERT",payload.new,"طلب جديد وصل مباشرة.");
     })
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"pastel_orders"},payload=>{
       upsertRealtimeRow(payload.new);
-      showMessage("تم تحديث طلب مباشرة.","ok");
+      realtimeEvent("UPDATE",payload.new,"تم تحديث طلب مباشرة.");
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"pastel_orders"},payload=>{
       markRealtimeEvent("DELETE",payload.old);
