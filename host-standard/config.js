@@ -95,7 +95,7 @@ window.HOST_CONFIG = {
   },
 
   tts: {
-    enabled: true,
+    enabled: false,
     endpoint: "https://rdcodzowehzmwdxhztxe.supabase.co/functions/v1/pastel-tts-v2",
     provider: "msedge-tts",
     voice: "ar-DZ-AminaNeural",
