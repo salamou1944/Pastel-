@@ -335,7 +335,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
         let active=null;
         for(const f of frames)if(elapsed>=f.s&&elapsed<f.e){active=f.v;break}
         for(const [name,items] of morph)for(const x of items)
-          x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.58+(name===active?.92:0)*.42;
+          x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.58+(name===active ? .92 : 0)*.42;
         if(lipsyncMode==="jaw"&&active)for(const items of jaw.values())for(const x of items)
           x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.55+.45*.35;
       },
