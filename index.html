@@ -525,9 +525,14 @@ const Q=[
 ];
 let last="";
 for(const [label,text] of Q){const b=document.createElement("button");b.textContent=label;b.onclick=()=>{last=text;document.getElementById("answer").textContent=text;setHostIntent?.("thinking");setTimeout(()=>speak(text),180)};document.getElementById("questions").appendChild(b)}
+window.__PASTEL_SPEAK_DIAG__=window.__PASTEL_SPEAK_DIAG__||{calls:0,ttsBranch:0,endpoint:null,lastError:null,fallback:false};
 async function speak(text){
+  const diag=window.__PASTEL_SPEAK_DIAG__;
+  diag.calls++;
   const cfg=window.HOST_CONFIG?.tts;
+  diag.endpoint=cfg?.endpoint||null;
   if(cfg?.enabled&&cfg.endpoint){
+    diag.ttsBranch++;
     speechSynthesis?.cancel();lipsync.stop();
     try{
       const response=await fetch(cfg.endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
@@ -545,9 +550,11 @@ async function speak(text){
       }
       throw new Error("audio_lipsync_unavailable");
     }catch(error){
+      diag.lastError=String(error?.message||error);
       console.warn("[PASTEL TTS] remote audio failed; using browser speech fallback",error);
     }
   }
+  diag.fallback=true;
   if(!("speechSynthesis"in window))return;
   // Deterministic fallback only. This is NOT presented as audio-driven lipsync.
   speechSynthesis.cancel();lipsync.stop();
