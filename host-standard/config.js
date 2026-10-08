@@ -13,6 +13,18 @@ window.HOST_CONFIG = {
     panel: "#16100d"
   },
 
+  environment: {
+    liveCafe: {
+      enabled: false,
+      protocol: "hls",
+      url: "",
+      label: "PASTEL · LIVE CAFE",
+      muted: true,
+      fit: "cover",
+      note: "Set the cafe camera's browser-playable HLS .m3u8 URL here. The stream must be authorized for public playback and send CORS headers. No fake/live-simulated state is reported as LIVE."
+    }
+  },
+
   host: {
     modelUrl: "./assets/pastel-host.glb",
     fallbackModelUrls: [],
