@@ -346,6 +346,27 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       }
     };
   }
+  function makeTextLipsync(text){
+    if(!text||!morph.size)return null;
+    const chars=[...String(text)].filter(ch=>/\\S/.test(ch));
+    if(!chars.length)return null;
+    let pos=0,last=performance.now();
+    const step=()=>{
+      const ch=chars[pos++%chars.length];
+      const key=selectViseme(ch);
+      for(const items of morph.values())for(const x of items)x.m.morphTargetInfluences[x.i]=x.m.morphTargetInfluences[x.i]*.45+(x.name===key?.name?.[0]?0.65:0);
+      if(key?.name?.length){
+        for(const name of key.name){for(const x of morph.get(name)||[])x.m.morphTargetInfluences[x.i]=Math.max(x.m.morphTargetInfluences[x.i],.72)}
+      }
+      last=performance.now();
+    };
+    step();
+    return {
+      mode:"text-viseme",
+      tick(){if(performance.now()-last>85)step()},
+      stop(){for(const items of morph.values())for(const x of items)x.m.morphTargetInfluences[x.i]=0}
+    };
+  }
   window.PASTEL_AUDIO_LIPSYNC=audioLipsync;
   window.PASTEL_HOST_LIPSYNC={
     useVisemeTimeline(timeline){
@@ -355,6 +376,15 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       if(!next)return false;
       lipsync=next;
       if(talkAction){setHostIntent("speaking");speaking=true}
+      return true;
+    },
+    useText(text){
+      speechSynthesis?.cancel();
+      lipsync.stop();
+      const next=makeTextLipsync(text);
+      if(!next)return false;
+      lipsync=next;
+      setHostIntent("speaking"); speaking=true;
       return true;
     },
     useAudioElement(el){
@@ -567,10 +597,10 @@ async function speak(text){
     }
   }
   diag.fallback=true;
+  diag.fallbackMode="browser-speech+text-viseme";
+  hostLipsync?.useText?.(text);
   if(!("speechSynthesis"in window))return;
   speechSynthesis.cancel();
-  hostLipsync?.stop?.();
-  window.__PASTEL_HOST_INTENT__?.set?.("speaking");
   const u=new SpeechSynthesisUtterance(text);
   u.lang=window.HOST_CONFIG?.language?.speech||"ar-DZ";
   u.rate=window.HOST_CONFIG?.language?.rate||.88;
