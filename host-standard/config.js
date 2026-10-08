@@ -3,8 +3,7 @@ window.HOST_CONFIG = {
     name: "PASTEL PASTRY&COFFEE",
     badge: "PASTEL HOST · REALISTIC 3D",
     eyebrow: "PASTEL PASTRY&COFFEE",
-    title: "مرحباً.
-أنا هنا لخدمتك.",
+    title: "مرحباً.\nأنا هنا لخدمتك.",
     subtitle: "اسألني عن الأشياء التي نملك معلومات موثقة عنها. إذا لم تكن المعلومة مثبتة، لن أخمّن."
   },
 
