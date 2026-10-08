@@ -676,7 +676,7 @@ setTimeout(closeEntry,4200);
 <script>
 document.querySelectorAll(".floating-actions button").forEach(btn=>btn.addEventListener("click",()=>{
   const map={ask:"الخدمات",menu:"الحلويات",location:"الموقع"};
-  if(btn.dataset.action==="order"){openOrder();return}
+  if(btn.dataset.action==="order"){window.__PASTEL_OPEN_ORDER__?.();return}
   if(btn.dataset.action==="reserve"){
     const answer=document.getElementById("answer");
     answer.textContent="الحجز غير مفعّل بعد. لن نعرض توفرًا أو تأكيد حجز وهميًا.";
