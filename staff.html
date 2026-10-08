@@ -136,6 +136,7 @@ supabase.auth.onAuthStateChange(async (_event,session)=>{
  if(!session){login.hidden=false;app.hidden=true;return}
  if((session.user.email||"").toLowerCase()!==STAFF_EMAIL){await supabase.auth.signOut();showMessage("هذا الحساب غير مخول.","error");return}
  login.hidden=true;app.hidden=false;document.getElementById("identity").textContent="دخول الموظف: "+session.user.email;
+ await syncRealtimeAuth(session);
  await load();
  if(!realtimeChannel) startRealtime();
 });
