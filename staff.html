@@ -84,6 +84,9 @@ function removeRealtimeRow(id){
 function startRealtime(){
   if(realtimeChannel) supabase.removeChannel(realtimeChannel);
   realtimeChannel=supabase.channel("pastel-staff-orders",{config:{private:false}})
+    .on("system","*",payload=>{
+      if(payload?.extension==="postgres_changes" && payload?.status==="ok") setRealtimeState("live");
+    })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"pastel_orders"},payload=>{
       upsertRealtimeRow(payload.new);
       showMessage("طلب جديد وصل مباشرة.","ok");
@@ -95,9 +98,14 @@ function startRealtime(){
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"pastel_orders"},payload=>{
       removeRealtimeRow(payload.old?.order_id);
     })
-    .subscribe(status=>{
-      if(status==="SUBSCRIBED") setRealtimeState("live");
-      else if(["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(status)) setRealtimeState("offline");
+    .subscribe(async(status,err)=>{
+      if(status==="SUBSCRIBED"){
+        setRealtimeState("live");
+        await load();
+      } else if(["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(status)){
+        setRealtimeState("offline");
+        if(err) console.warn("[PASTEL REALTIME]",status,err);
+      }
     });
 }
 async function load(){
