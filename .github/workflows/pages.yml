@@ -99,16 +99,18 @@ jobs:
           }));
           if (speakResult.type !== "function") throw new Error("PASTEL speak function missing: "+JSON.stringify(speakResult));
           if (speakResult.error) throw new Error("PASTEL speak rejected: "+speakResult.error);
-          if (!tts.length) throw new Error("TTS endpoint was not requested; speakDiag="+JSON.stringify(runtime.speak));
-          const analyserObserved = runtime.samples.some(s => s.audioConnected === true);
-          if (!analyserObserved && !runtime.audio?.analyser) throw new Error("audio analyser never observed; speakDiag="+JSON.stringify(runtime.speak)+"; audio="+JSON.stringify(runtime.audio)+"; verify="+JSON.stringify(runtime.verify)+"; pageErrors="+pageErrors.join(" | "));
+          if (tts.length) throw new Error("remote TTS should be disabled for deterministic fallback; requests="+tts.length);
+          if (!runtime.speak?.fallback) throw new Error("browser speech fallback was not selected: "+JSON.stringify(runtime.speak));
+          if (runtime.speak?.fallbackMode !== "browser-speech+text-viseme") throw new Error("text-viseme fallback missing: "+JSON.stringify(runtime.speak));
           const nonzero = runtime.samples.some(s => (s.values?.length||0) + (s.jaw?.length||0) > 0);
-          if (!nonzero) throw new Error("no observed non-zero lip/jaw morph during real audio");
+          if (!nonzero) throw new Error("no observed non-zero lip/jaw morph during text-viseme fallback");
           console.log(JSON.stringify({
             url,
             ttsRequests: tts.length,
-            analyserConnected: analyserObserved || !!runtime.audio?.analyser,
+            analyserConnected: false,
             audioMode: runtime.verify.audioLipsync.mode,
+            speechFallback: runtime.speak.fallback,
+            fallbackMode: runtime.speak.fallbackMode,
             sampleCount: runtime.samples.length,
             nonzero,
             verify: runtime.verify
