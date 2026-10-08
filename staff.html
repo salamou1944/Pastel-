@@ -44,7 +44,7 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
 const SUPABASE_URL="https://rdcodzowehzmwdxhztxe.supabase.co";
 const SUPABASE_KEY="sb_publishable_0BVCTENaMqOgVf8lL6zz3Q_2ypzyiJK";
 const STAFF_EMAIL="sarl.pastel.pastry@gmail.com";
-const supabase=createClient(SUPABASE_URL,SUPABASE_KEY);
+const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true},realtime:{params:{eventsPerSecond:10}},accessToken:async()=>{const {data:{session}}=await supabase.auth.getSession();return session?.access_token||null;}});
 const login=document.getElementById("login"),app=document.getElementById("app"),queue=document.getElementById("queue"),message=document.getElementById("message");
 const labels={NEW:"جديد",ACCEPTED:"مقبول",PREPARING:"قيد التحضير",READY:"جاهز",COMPLETED:"مكتمل",CANCELLED:"ملغى"};
 const next={NEW:"ACCEPTED",ACCEPTED:"PREPARING",PREPARING:"READY",READY:"COMPLETED"};
@@ -65,11 +65,15 @@ function render(rows){
 let rows=[];
 let realtimeChannel=null;
 let realtimeState="offline";
-function setRealtimeState(state){
+function setRealtimeState(state,detail=""){
   realtimeState=state;
   const el=document.getElementById("realtime-status");
-  if(el) el.textContent=state==="live"?"● مباشر":"○ غير متصل";
-  if(el) el.className="small "+(state==="live"?"ok":"muted");
+  if(el){
+    el.textContent=state==="live"?"● مباشر":state==="connecting"?"◌ جاري الاتصال":"○ غير متصل";
+    el.className="small "+(state==="live"?"ok":state==="connecting"?"muted":"error");
+    if(detail) el.title=detail;
+  }
+  window.__PASTEL_STAFF_REALTIME__={state,detail,at:new Date().toISOString()};
 }
 function upsertRealtimeRow(row){
   if(!row?.order_id)return;
@@ -83,9 +87,10 @@ function removeRealtimeRow(id){
 }
 function startRealtime(){
   if(realtimeChannel) supabase.removeChannel(realtimeChannel);
+  setRealtimeState("connecting");
   realtimeChannel=supabase.channel("pastel-staff-orders",{config:{private:true}})
     .on("system","*",payload=>{
-      if(payload?.extension==="postgres_changes" && payload?.status==="ok") setRealtimeState("live");
+      if(payload?.extension==="postgres_changes" && payload?.status==="ok") setRealtimeState("live","Postgres Changes subscription ready");
     })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"pastel_orders"},payload=>{
       upsertRealtimeRow(payload.new);
@@ -98,13 +103,15 @@ function startRealtime(){
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"pastel_orders"},payload=>{
       removeRealtimeRow(payload.old?.order_id);
     })
-    .subscribe(async(status,err)=>{
+    .subscribe((status,err)=>{
       if(status==="SUBSCRIBED"){
-        setRealtimeState("live");
-        await load();
+        setRealtimeState("live","WebSocket subscribed");
+        void load();
       } else if(["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(status)){
-        setRealtimeState("offline");
+        setRealtimeState("offline",err?.message||status);
         if(err) console.warn("[PASTEL REALTIME]",status,err);
+      } else {
+        setRealtimeState("connecting",status);
       }
     });
 }
@@ -123,7 +130,10 @@ async function updateStatus(id,status){
 document.getElementById("filter").onchange=()=>render(rows);
 document.getElementById("refresh").onclick=load;
 document.getElementById("logout").onclick=async()=>{ if(realtimeChannel) await supabase.removeChannel(realtimeChannel); realtimeChannel=null; await supabase.auth.signOut(); };
-async function syncRealtimeAuth(session){ if(session?.access_token) await supabase.realtime.setAuth(session.access_token); }
+async function syncRealtimeAuth(session){
+  if(session?.access_token) await supabase.realtime.setAuth(session.access_token);
+  else await supabase.realtime.setAuth();
+}
 document.getElementById("login-form").onsubmit=async e=>{
  e.preventDefault();
  const email=document.getElementById("email").value.trim().toLowerCase();
@@ -133,13 +143,19 @@ document.getElementById("login-form").onsubmit=async e=>{
  const {error}=await supabase.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:location.href}});
  status.textContent=error?"تعذر إرسال الرابط: "+error.message:"تم إرسال رابط الدخول. افحص البريد.";
 };
-supabase.auth.onAuthStateChange(async (_event,session)=>{
- if(!session){login.hidden=false;app.hidden=true;return}
- if((session.user.email||"").toLowerCase()!==STAFF_EMAIL){await supabase.auth.signOut();showMessage("هذا الحساب غير مخول.","error");return}
+supabase.auth.onAuthStateChange((_event,session)=>{
+ if(!session){login.hidden=false;app.hidden=true;setRealtimeState("offline","signed out");return}
+ if((session.user.email||"").toLowerCase()!==STAFF_EMAIL){
+   void supabase.auth.signOut();
+   showMessage("هذا الحساب غير مخول.","error");
+   return;
+ }
  login.hidden=true;app.hidden=false;document.getElementById("identity").textContent="دخول الموظف: "+session.user.email;
- await syncRealtimeAuth(session);
- await load();
- if(!realtimeChannel) startRealtime();
+ void (async()=>{
+   await syncRealtimeAuth(session);
+   await load();
+   if(!realtimeChannel) startRealtime();
+ })().catch(error=>showMessage("تعذر تهيئة طابور الوقت الحقيقي: "+(error?.message||error),"error"));
 });
 const {data:{session}}=await supabase.auth.getSession();
 if(session){ await syncRealtimeAuth(session); await load(); startRealtime(); }
