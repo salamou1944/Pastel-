@@ -123,7 +123,7 @@ async function updateStatus(id,status){
 document.getElementById("filter").onchange=()=>render(rows);
 document.getElementById("refresh").onclick=load;
 document.getElementById("logout").onclick=async()=>{ if(realtimeChannel) await supabase.removeChannel(realtimeChannel); realtimeChannel=null; await supabase.auth.signOut(); };
-document.getElementById("login-form").onsubmit=async e=>{
+async function syncRealtimeAuth(session){ if(session?.access_token) await supabase.realtime.setAuth(session.access_token); }\ndocument.getElementById("login-form").onsubmit=async e=>{
  e.preventDefault();
  const email=document.getElementById("email").value.trim().toLowerCase();
  const status=document.getElementById("auth-status");
@@ -140,7 +140,7 @@ supabase.auth.onAuthStateChange(async (_event,session)=>{
  if(!realtimeChannel) startRealtime();
 });
 const {data:{session}}=await supabase.auth.getSession();
-if(session){ await load(); startRealtime(); }
+if(session){ await syncRealtimeAuth(session); await load(); startRealtime(); }
 </script>
 </body>
 </html>
