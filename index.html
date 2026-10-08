@@ -387,6 +387,15 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       setHostIntent("speaking"); speaking=true;
       return true;
     },
+    useText(text){
+      speechSynthesis?.cancel();
+      lipsync.stop();
+      const next=makeTextLipsync(text);
+      if(!next)return false;
+      lipsync=next;
+      setHostIntent("speaking"); speaking=true;
+      return true;
+    },
     useAudioElement(el){
       speechSynthesis?.cancel();
       lipsync.stop();
