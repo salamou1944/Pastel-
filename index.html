@@ -656,18 +656,7 @@ document.getElementById("wa").href="https://wa.me/213541332877";document.getElem
 </script>
 <script>
 const addOrderItem=document.getElementById("add-order-item");
-addOrderItem?.addEventListener("click",()=>{
-  const name=document.getElementById("order-item-name")?.value.trim();
-  const quantity=Math.max(1,Number.parseInt(document.getElementById("order-item-qty")?.value||"1",10)||1);
-  const status=document.getElementById("order-status");
-  if(!name){status.textContent="اكتب اسم العنصر أولاً.";return}
-  const item=orderState.items.find(x=>x.name===name);
-  if(item)item.quantity+=quantity; else orderState.items.push({name,quantity});
-  document.getElementById("order-item-name").value="";
-  document.getElementById("order-item-qty").value="1";
-  status.textContent="تمت إضافة العنصر إلى الطلب.";
-  renderOrder();
-});
+addOrderItem?.addEventListener("click",()=>window.__PASTEL_ADD_ORDER_ITEM__?.());
 const entry=document.getElementById("cinematic-entry");
 const enter=document.getElementById("enter-experience");
 function closeEntry(){entry?.classList.add("exit");setTimeout(()=>entry?.remove(),900);}
