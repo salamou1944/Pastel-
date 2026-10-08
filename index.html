@@ -364,14 +364,6 @@ loader.setMeshoptDecoder(MeshoptDecoder);
       return true;
     },
     useText(text){
-      lipsync.stop();
-      const next=makeTextLipsync(text);
-      if(!next)return false;
-      lipsync=next;
-      setHostIntent("speaking"); speaking=true;
-      return true;
-    },
-    useText(text){
       speechSynthesis?.cancel();
       lipsync.stop();
       const next=makeTextLipsync(text);
