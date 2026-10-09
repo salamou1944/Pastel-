@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">\n<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n<meta http-equiv="Pragma" content="no-cache">\n<meta http-equiv="Expires" content="0">
 <title>PASTEL · Staff Queue · Realtime</title>
 <style>
 :root{--bg:#090706;--panel:#17110e;--line:#ffffff18;--text:#f8f2eb;--muted:#b8aaa0;--accent:#e8c99f}
@@ -43,7 +43,7 @@ main{width:min(1200px,100%);margin:auto;padding:24px}.top{display:flex;justify-c
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/+esm";
 const SUPABASE_URL="https://rdcodzowehzmwdxhztxe.supabase.co";
 const SUPABASE_KEY="sb_publishable_0BVCTENaMqOgVf8lL6zz3Q_2ypzyiJK";
-const STAFF_EMAIL="sarl.pastel.pastry@gmail.com";
+const STAFF_EMAIL="sarl.pastel.pastry@gmail.com";\nwindow.__PASTEL_STAFF_BUILD__="20261009-authdiag1";
 const STAFF_REDIRECT_URL="https://salamou1944.github.io/Pastel-/staff.html";
 const authParams=new URLSearchParams(location.hash.replace(/^#/,""));
 const authError=authParams.get("error_description")||authParams.get("error")||new URLSearchParams(location.search).get("error_description")||new URLSearchParams(location.search).get("error");
@@ -150,12 +150,28 @@ document.getElementById("login-form").onsubmit=async e=>{
  if(email!==STAFF_EMAIL){status.textContent="هذا البريد غير مخول.";return}
  button.disabled=true; status.textContent="جاري الاتصال بـ Supabase وإرسال رابط الدخول…";
  try{
-   const request=supabase.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:STAFF_REDIRECT_URL}});
-   const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error("انتهت مهلة الاتصال. تحقق من الإنترنت ثم أعد المحاولة.")),15000));
-   const {error}=await Promise.race([request,timeout]);
-   status.textContent=error?"تعذر إرسال الرابط: "+error.message:"تم إرسال رابط الدخول. افحص البريد، ثم افتح الرابط على هذا الجهاز والمتصفح.";
+   const controller=new AbortController();
+   const timeout=setTimeout(()=>controller.abort(),12000);
+   let response,body;
+   try{
+     response=await fetch(SUPABASE_URL+"/auth/v1/otp",{
+       method:"POST",
+       headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+       body:JSON.stringify({email,create_user:true,email_redirect_to:STAFF_REDIRECT_URL}),
+       signal:controller.signal
+     });
+     body=await response.json().catch(()=>({}));
+   }finally{clearTimeout(timeout)}
+   if(!response.ok){
+     const reason=body.msg||body.message||body.error_description||body.error||("HTTP "+response.status);
+     status.textContent="رفض Supabase إرسال الرابط ("+response.status+"): "+reason;
+   }else{
+     status.textContent="قبل Supabase طلب الإرسال. افحص البريد الوارد والرسائل غير المرغوب فيها. إذا لم يصل، فراجع إعداد SMTP وحدّ الإرسال في Supabase.";
+   }
  }catch(error){
-   status.textContent="لم يستجب Supabase: "+(error?.message||String(error));
+   status.textContent=error?.name==="AbortError"
+     ?"انتهت مهلة الاتصال بعد 12 ثانية. لم يصل رد من Supabase؛ تحقق من الاتصال ثم أعد المحاولة."
+     :"فشل الاتصال بـ Supabase: "+(error?.message||String(error));
  }finally{button.disabled=false}
 };
 if(authError){
