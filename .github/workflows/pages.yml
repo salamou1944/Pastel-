@@ -52,7 +52,7 @@ jobs:
           PY
           node --check /tmp/pastel-staff.mjs
           grep -F 'supabase.channel("pastel-staff-orders")' staff.html >/dev/null
-          grep -F 'email_redirect_to:STAFF_REDIRECT_URL' staff.html >/dev/null
+          grep -F '/auth/v1/otp?redirect_to=' staff.html >/dev/null
           grep -F 'authError' staff.html >/dev/null
           echo "STAFF_MAGIC_LINK_CALLBACK_AND_REALTIME_OK"
       - name: Verify Host GLB structure
