@@ -158,10 +158,10 @@ document.getElementById("login-form").onsubmit=async e=>{
    const timeout=setTimeout(()=>controller.abort(),12000);
    let response,body;
    try{
-     response=await fetch(SUPABASE_URL+"/auth/v1/otp",{
+     response=await fetch(SUPABASE_URL+"/auth/v1/otp?redirect_to="+encodeURIComponent(STAFF_REDIRECT_URL),{
        method:"POST",
        headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
-       body:JSON.stringify({email,create_user:true,email_redirect_to:STAFF_REDIRECT_URL}),
+       body:JSON.stringify({email,create_user:true}),
        signal:controller.signal
      });
      body=await response.json().catch(()=>({}));
