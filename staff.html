@@ -104,7 +104,7 @@ function startRealtime(){
   if(realtimeChannel) supabase.removeChannel(realtimeChannel);
   setRealtimeState("connecting");
   realtimeChannel=supabase.channel("pastel-staff-orders")
-    .on("system","*",payload=>{
+    .on("system",{event:"*"},payload=>{
       if(payload?.extension==="postgres_changes" && payload?.status==="ok") setRealtimeState("live","Postgres Changes subscription ready");
     })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"pastel_orders"},payload=>{
