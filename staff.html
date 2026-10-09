@@ -121,7 +121,9 @@ function startRealtime(){
     })
     .subscribe((status,err)=>{
       if(status==="SUBSCRIBED"){
-        setRealtimeState("live","WebSocket subscribed");
+        // A WebSocket subscription alone does not prove Postgres Changes is ready.
+        // Only the system extension acknowledgement above promotes state to live.
+        setRealtimeState("connecting","WebSocket subscribed; waiting for postgres_changes acknowledgement");
         void load();
       } else if(["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(status)){
         setRealtimeState("offline",err?.message||status);
