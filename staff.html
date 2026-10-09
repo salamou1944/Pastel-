@@ -44,6 +44,9 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
 const SUPABASE_URL="https://rdcodzowehzmwdxhztxe.supabase.co";
 const SUPABASE_KEY="sb_publishable_0BVCTENaMqOgVf8lL6zz3Q_2ypzyiJK";
 const STAFF_EMAIL="sarl.pastel.pastry@gmail.com";
+const STAFF_REDIRECT_URL="https://salamou1944.github.io/Pastel-/staff.html";
+const authParams=new URLSearchParams(location.hash.replace(/^#/,""));
+const authError=authParams.get("error_description")||authParams.get("error")||new URLSearchParams(location.search).get("error_description")||new URLSearchParams(location.search).get("error");
 const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true},realtime:{params:{eventsPerSecond:10}},accessToken:async()=>{const {data:{session}}=await supabase.auth.getSession();return session?.access_token||null;}});
 const login=document.getElementById("login"),app=document.getElementById("app"),queue=document.getElementById("queue"),message=document.getElementById("message");
 const labels={NEW:"جديد",ACCEPTED:"مقبول",PREPARING:"قيد التحضير",READY:"جاهز",COMPLETED:"مكتمل",CANCELLED:"ملغى"};
@@ -147,7 +150,7 @@ document.getElementById("login-form").onsubmit=async e=>{
  if(email!==STAFF_EMAIL){status.textContent="هذا البريد غير مخول.";return}
  button.disabled=true; status.textContent="جاري الاتصال بـ Supabase وإرسال رابط الدخول…";
  try{
-   const request=supabase.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:location.origin+location.pathname}});
+   const request=supabase.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:STAFF_REDIRECT_URL}});
    const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error("انتهت مهلة الاتصال. تحقق من الإنترنت ثم أعد المحاولة.")),15000));
    const {error}=await Promise.race([request,timeout]);
    status.textContent=error?"تعذر إرسال الرابط: "+error.message:"تم إرسال رابط الدخول. افحص البريد، ثم افتح الرابط على هذا الجهاز والمتصفح.";
@@ -155,6 +158,10 @@ document.getElementById("login-form").onsubmit=async e=>{
    status.textContent="لم يستجب Supabase: "+(error?.message||String(error));
  }finally{button.disabled=false}
 };
+if(authError){
+ const status=document.getElementById("auth-status");
+ status.textContent="تعذر تسجيل الدخول من الرابط: "+decodeURIComponent(String(authError).replace(/\\+/g," "))+ " — اطلب رابطاً جديداً وافتحه مرة واحدة في Safari أو Chrome.";
+}
 window.addEventListener("error",e=>{
  const status=document.getElementById("auth-status");
  if(status&&!login.hidden)status.textContent="خطأ في تحميل واجهة الدخول: "+(e.message||"تعذر تشغيل JavaScript");
@@ -163,7 +170,12 @@ window.addEventListener("unhandledrejection",e=>{
  const status=document.getElementById("auth-status");
  if(status&&!login.hidden)status.textContent="تعذر بدء الاتصال: "+(e.reason?.message||String(e.reason||"خطأ غير معروف"));
 });
-supabase.auth.onAuthStateChange((_event,session)=>{
+supabase.auth.onAuthStateChange((event,session)=>{
+ if(event==="SIGNED_IN"&&session){
+   history.replaceState({},document.title,STAFF_REDIRECT_URL);
+   document.getElementById("auth-status").textContent="";
+ }
+
  if(!session){login.hidden=false;app.hidden=true;setRealtimeState("offline","signed out");return}
  if((session.user.email||"").toLowerCase()!==STAFF_EMAIL){
    void supabase.auth.signOut();
