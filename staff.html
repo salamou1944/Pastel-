@@ -121,8 +121,9 @@ function startRealtime(){
     })
     .subscribe((status,err)=>{
       if(status==="SUBSCRIBED"){
-        // Supabase documents SUBSCRIBED as the successful channel subscription state.
-        setRealtimeState("live","Supabase Realtime channel subscribed");
+        // Channel join is not proof that the Postgres replication listener is ready.
+        // The system event above promotes the badge to LIVE when postgres_changes reports status=ok.
+        setRealtimeState("connecting","Channel subscribed; awaiting Postgres Changes readiness");
         void load();
       } else if(["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(status)){
         setRealtimeState("offline",err?.message||status);
