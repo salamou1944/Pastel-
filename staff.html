@@ -96,7 +96,7 @@ function removeRealtimeRow(id){
 function startRealtime(){
   if(realtimeChannel) supabase.removeChannel(realtimeChannel);
   setRealtimeState("connecting");
-  realtimeChannel=supabase.channel("pastel-staff-orders",{config:{private:true}})
+  realtimeChannel=supabase.channel("pastel-staff-orders")
     .on("system","*",payload=>{
       if(payload?.extension==="postgres_changes" && payload?.status==="ok") setRealtimeState("live","Postgres Changes subscription ready");
     })
@@ -139,19 +139,30 @@ async function updateStatus(id,status){
 document.getElementById("filter").onchange=()=>render(rows);
 document.getElementById("refresh").onclick=load;
 document.getElementById("logout").onclick=async()=>{ if(realtimeChannel) await supabase.removeChannel(realtimeChannel); realtimeChannel=null; await supabase.auth.signOut(); };
-async function syncRealtimeAuth(session){
-  if(session?.access_token) await supabase.realtime.setAuth(session.access_token);
-  else await supabase.realtime.setAuth();
-}
 document.getElementById("login-form").onsubmit=async e=>{
  e.preventDefault();
  const email=document.getElementById("email").value.trim().toLowerCase();
  const status=document.getElementById("auth-status");
+ const button=e.currentTarget.querySelector('button[type="submit"]');
  if(email!==STAFF_EMAIL){status.textContent="هذا البريد غير مخول.";return}
- status.textContent="جاري إرسال رابط الدخول…";
- const {error}=await supabase.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:location.href}});
- status.textContent=error?"تعذر إرسال الرابط: "+error.message:"تم إرسال رابط الدخول. افحص البريد.";
+ button.disabled=true; status.textContent="جاري الاتصال بـ Supabase وإرسال رابط الدخول…";
+ try{
+   const request=supabase.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:location.origin+location.pathname}});
+   const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error("انتهت مهلة الاتصال. تحقق من الإنترنت ثم أعد المحاولة.")),15000));
+   const {error}=await Promise.race([request,timeout]);
+   status.textContent=error?"تعذر إرسال الرابط: "+error.message:"تم إرسال رابط الدخول. افحص البريد، ثم افتح الرابط على هذا الجهاز والمتصفح.";
+ }catch(error){
+   status.textContent="لم يستجب Supabase: "+(error?.message||String(error));
+ }finally{button.disabled=false}
 };
+window.addEventListener("error",e=>{
+ const status=document.getElementById("auth-status");
+ if(status&&!login.hidden)status.textContent="خطأ في تحميل واجهة الدخول: "+(e.message||"تعذر تشغيل JavaScript");
+});
+window.addEventListener("unhandledrejection",e=>{
+ const status=document.getElementById("auth-status");
+ if(status&&!login.hidden)status.textContent="تعذر بدء الاتصال: "+(e.reason?.message||String(e.reason||"خطأ غير معروف"));
+});
 supabase.auth.onAuthStateChange((_event,session)=>{
  if(!session){login.hidden=false;app.hidden=true;setRealtimeState("offline","signed out");return}
  if((session.user.email||"").toLowerCase()!==STAFF_EMAIL){
@@ -160,14 +171,10 @@ supabase.auth.onAuthStateChange((_event,session)=>{
    return;
  }
  login.hidden=true;app.hidden=false;document.getElementById("identity").textContent="دخول الموظف: "+session.user.email;
- void (async()=>{
-   await syncRealtimeAuth(session);
-   await load();
-   if(!realtimeChannel) startRealtime();
- })().catch(error=>showMessage("تعذر تهيئة طابور الوقت الحقيقي: "+(error?.message||error),"error"));
+ void load().then(()=>{if(!realtimeChannel)startRealtime()}).catch(error=>showMessage("تعذر تهيئة الطابور: "+(error?.message||error),"error"));
 });
 const {data:{session}}=await supabase.auth.getSession();
-if(session){ await syncRealtimeAuth(session); await load(); startRealtime(); }
+if(session){ await load(); startRealtime(); }
 </script>
 </body>
 </html>
