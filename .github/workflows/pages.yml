@@ -87,6 +87,7 @@ jobs:
       - name: Verify deployed Host runtime + Arabic speech with Playwright
         env:
           PASTEL_PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          PASTEL_RUN_MUTATING_ORDER_SMOKE: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           npm init -y >/dev/null 2>&1
           npm install --no-save playwright@1.55.0 >/dev/null 2>&1
@@ -165,19 +166,31 @@ jobs:
           if (/تم تأكيد الطلب رقم/.test(orderConversation.status)) throw new Error("Host falsely confirmed an order before submission: "+JSON.stringify(orderConversation));
           console.log("HOST_ORDER_DRAFT_SMOKE_OK "+JSON.stringify(orderConversation));
           await conversationPage.close();
-          // Real customer journey smoke: exercise the production Order UI and backend.
-          const orderButton = page.locator('.floating-actions button[data-action="order"]').first();
-          if (await orderButton.count()) await orderButton.click();
-          else await page.locator('button[data-action="order"]').first().click();
-          await page.locator("#order-item-name").fill("PASTEL SMOKE TEST");
-          await page.locator("#order-item-qty").fill("1");
-          await page.locator("#add-order-item").click();
-          await page.locator("#submit-order").click();
-          await page.waitForFunction(() => /تم تأكيد الطلب رقم/i.test(document.querySelector("#order-status")?.textContent || ""), null, {timeout:30000});
-          const orderStatus = await page.locator("#order-status").textContent();
-          const orderIdMatch = String(orderStatus||"").match(/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})/i);
-          if (!orderIdMatch) throw new Error("Production order returned no valid Order ID: "+orderStatus);
-          console.log("REAL_ORDER_SMOKE_OK "+orderIdMatch[1]);
+          // Mutating production order smoke is manual-only; regular deploys must not pollute the live queue.
+          if (process.env.PASTEL_RUN_MUTATING_ORDER_SMOKE === "true") {
+            const orderButton = page.locator('.floating-actions button[data-action="order"]').first();
+            if (await orderButton.count()) await orderButton.click();
+            else await page.locator('button[data-action="order"]').first().click();
+            await page.locator("#order-item-name").fill("PASTEL SMOKE TEST");
+            await page.locator("#order-item-qty").fill("1");
+            await page.locator("#add-order-item").click();
+            await page.locator("#submit-order").click();
+            await page.waitForFunction(() => /تم تأكيد الطلب رقم/i.test(document.querySelector("#order-status")?.textContent || ""), null, {timeout:30000});
+            const orderStatus = await page.locator("#order-status").textContent();
+            const orderIdMatch = String(orderStatus||"").match(/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})/i);
+            if (!orderIdMatch) throw new Error("Production order returned no valid Order ID: "+orderStatus);
+            console.log("REAL_ORDER_SMOKE_OK "+orderIdMatch[1]);
+          } else {
+            const orderUi = await page.evaluate(() => ({
+              name: !!document.querySelector("#order-item-name"),
+              quantity: !!document.querySelector("#order-item-qty"),
+              add: !!document.querySelector("#add-order-item"),
+              submit: !!document.querySelector("#submit-order")
+            }));
+            if (!orderUi.name || !orderUi.quantity || !orderUi.add || !orderUi.submit)
+              throw new Error("Customer order UI incomplete: "+JSON.stringify(orderUi));
+            console.log("CUSTOMER_ORDER_UI_SMOKE_OK "+JSON.stringify(orderUi));
+          }
 
           // Staff route security smoke: page must load but never expose queue before auth.
           const staffPage = await browser.newPage();
