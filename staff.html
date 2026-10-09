@@ -186,8 +186,16 @@ document.getElementById("login-form").onsubmit=async e=>{
      const reason=body.msg||body.message||body.error_description||body.error||("HTTP "+response.status);
      status.textContent="رفض Supabase إرسال الرابط ("+response.status+"): "+reason;
      if(response.status===429){
-       const match=String(reason).match(/after\s+(\d+)\s+seconds/i);
-       startAuthCooldown(match?Number(match[1])+1:60);
+       const lower=String(reason).toLowerCase();
+       // Supabase's built-in email provider is limited to 2 messages/hour project-wide.
+       // Do not invite repeated retries when this is the email-send quota.
+       if(lower.includes("email rate limit")||lower.includes("over_email_send_rate_limit")){
+         status.textContent="وصلنا إلى حد إرسال البريد في Supabase. لا تعاود الطلب الآن؛ انتظر ساعة تقريباً، أو اضبط SMTP مخصصاً في Supabase Authentication → Emails → SMTP Settings. هذا الحد لا يُرفع من صفحة الطابور.";
+         startAuthCooldown(3600);
+       }else{
+         const match=String(reason).match(/after\s+(\d+)\s+seconds/i);
+         startAuthCooldown(match?Number(match[1])+1:300);
+       }
      }
    }else{
      status.textContent="قبل Supabase طلب الإرسال. افحص البريد الوارد والرسائل غير المرغوب فيها. إذا لم يصل، فراجع إعداد SMTP وحدّ الإرسال في Supabase.";
