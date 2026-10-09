@@ -51,7 +51,7 @@ window.__PASTEL_STAFF_BUILD__="20261009-authdiag1";
 const STAFF_REDIRECT_URL="https://salamou1944.github.io/Pastel-/staff.html";
 const authParams=new URLSearchParams(location.hash.replace(/^#/,""));
 const authError=authParams.get("error_description")||authParams.get("error")||new URLSearchParams(location.search).get("error_description")||new URLSearchParams(location.search).get("error");
-const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true},realtime:{params:{eventsPerSecond:10}},accessToken:async()=>{const {data:{session}}=await supabase.auth.getSession();return session?.access_token||null;}});
+const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true},realtime:{params:{eventsPerSecond:10}}});
 const login=document.getElementById("login"),app=document.getElementById("app"),queue=document.getElementById("queue"),message=document.getElementById("message");
 const labels={NEW:"جديد",ACCEPTED:"مقبول",PREPARING:"قيد التحضير",READY:"جاهز",COMPLETED:"مكتمل",CANCELLED:"ملغى"};
 const next={NEW:"ACCEPTED",ACCEPTED:"PREPARING",PREPARING:"READY",READY:"COMPLETED"};
