@@ -137,6 +137,20 @@ jobs:
           if(!(speechAfter?.calls>0)) throw new Error("Host speech was not invoked: "+JSON.stringify(speechAfter));
           if(!speechAfter?.voice && !speechAfter?.lang) throw new Error("Arabic voice diagnostics missing: "+JSON.stringify(speechAfter));
 
+          const hostConversation = await page.evaluate(() => {
+            if (!window.__PASTEL_HOST_CONVERSATION__?.process) return {available:false};
+            window.__PASTEL_HOST_CONVERSATION__.process("ما أسعاركم؟");
+            return {
+              available:true,
+              mode:window.__PASTEL_HOST_CONVERSATION__.getMode(),
+              answer:document.querySelector("#answer")?.textContent || "",
+              logMessages:document.querySelectorAll("#conversation-log .conversation-message").length
+            };
+          });
+          if (!hostConversation.available) throw new Error("Host conversation runtime did not boot: "+JSON.stringify(hostConversation));
+          if (!/لن أخمّن|غير متوفرة/i.test(hostConversation.answer)) throw new Error("Host price question did not use safe grounded response: "+JSON.stringify(hostConversation));
+          if (hostConversation.logMessages < 3) throw new Error("Host conversation did not append user and assistant turns: "+JSON.stringify(hostConversation));
+          console.log("HOST_CONVERSATION_SMOKE_OK "+JSON.stringify(hostConversation));
           // Real customer journey smoke: exercise the production Order UI and backend.
           const orderButton = page.locator('.floating-actions button[data-action="order"]').first();
           if (await orderButton.count()) await orderButton.click();
