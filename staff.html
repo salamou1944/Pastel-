@@ -186,7 +186,7 @@ document.getElementById("login-form").onsubmit=async e=>{
      const reason=body.msg||body.message||body.error_description||body.error||("HTTP "+response.status);
      status.textContent="رفض Supabase إرسال الرابط ("+response.status+"): "+reason;
      if(response.status===429){
-       const match=String(reason).match(/after\\s+(\\d+)\\s+seconds/i);
+       const match=String(reason).match(/after\s+(\d+)\s+seconds/i);
        startAuthCooldown(match?Number(match[1])+1:60);
      }
    }else{
