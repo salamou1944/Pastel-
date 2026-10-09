@@ -137,6 +137,9 @@ jobs:
           const speechAfter = await page.evaluate(() => window.__PASTEL_SPEAK_DIAG__||null);
           if(!(speechAfter?.calls>0)) throw new Error("Host speech was not invoked: "+JSON.stringify(speechAfter));
           if(!speechAfter?.voice && !speechAfter?.lang) throw new Error("Arabic voice diagnostics missing: "+JSON.stringify(speechAfter));
+          const lipsync = await page.evaluate(() => window.__PASTEL_LIPSYNC_TEST__?.("أهلاً بك في باستيل") || null);
+          if(!lipsync?.apiAvailable || !(lipsync.events>0)) throw new Error("Arabic Host viseme adapter did not activate: "+JSON.stringify(lipsync));
+          console.log("HOST_ARABIC_LIPSYNC_ADAPTER_OK "+JSON.stringify(lipsync));
 
           const hostConversation = await page.evaluate(() => {
             if (!window.__PASTEL_HOST_CONVERSATION__?.process) return {available:false};
