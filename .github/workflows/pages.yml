@@ -137,6 +137,27 @@ jobs:
           if (!orderIdMatch) throw new Error("Production order returned no valid Order ID: "+orderStatus);
           console.log("REAL_ORDER_SMOKE_OK "+orderIdMatch[1]);
 
+          // Staff route security smoke: page must load but never expose queue before auth.
+          const staffPage = await browser.newPage();
+          const staffErrors = [];
+          staffPage.on("pageerror", err => staffErrors.push(String(err?.message || err)));
+          const staffUrl = new URL("staff.html", url).toString();
+          await staffPage.goto(staffUrl, {waitUntil:"networkidle", timeout:60000});
+          await staffPage.waitForTimeout(1200);
+          const staffGate = await staffPage.evaluate(() => ({
+            title: document.title,
+            build: window.__PASTEL_STAFF_BUILD__ || null,
+            loginVisible: !document.querySelector("#login")?.hidden,
+            appHidden: !!document.querySelector("#app")?.hidden,
+            queueText: document.querySelector("#queue")?.innerText || "",
+            sessionStorage: !!localStorage.getItem("sb-rdcodzowehzmwdxhztxe-auth-token")
+          }));
+          if (!staffGate.build) throw new Error("Staff route JavaScript did not boot: "+JSON.stringify(staffGate)+"; errors="+staffErrors.join(" | "));
+          if (!staffGate.loginVisible || !staffGate.appHidden) throw new Error("Staff queue was not locked before authentication: "+JSON.stringify(staffGate));
+          if (staffGate.queueText.trim()) throw new Error("Staff queue exposed content before authentication: "+JSON.stringify(staffGate));
+          console.log("STAFF_AUTH_GATE_OK "+JSON.stringify({staffUrl, ...staffGate}));
+          await staffPage.close();
+
           console.log(JSON.stringify({
             url,
             agentPresent:runtime.agentPresent,
