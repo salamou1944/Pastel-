@@ -64,11 +64,25 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Verify anonymous order read is blocked
+      - name: Verify anonymous order read is blocked with a real publishable key
         run: |
-          code=$(curl -sS -o /tmp/pastel-anon-orders.txt -w "%{http_code}" "https://rdcodzowehzmwdxhztxe.supabase.co/rest/v1/pastel_orders?select=order_id,status&limit=1")
-          test "$code" != "200"
-          echo "ANON_ORDER_READ_BLOCKED $code"
+          key=$(python - <<'PY'
+          import re
+          h=open("staff.html",encoding="utf-8").read()
+          m=re.search(r'SUPABASE_KEY="([^"]+)"',h)
+          if not m: raise SystemExit("Supabase publishable key not found")
+          print(m.group(1))
+          PY
+          )
+          code=$(curl -sS -o /tmp/pastel-anon-orders.txt -w "%{http_code}" \
+            -H "apikey: $key" \
+            "https://rdcodzowehzmwdxhztxe.supabase.co/rest/v1/pastel_orders?select=order_id,status&limit=1")
+          if [ "$code" = "200" ]; then
+            echo "SECURITY REGRESSION: anonymous client can read orders"
+            cat /tmp/pastel-anon-orders.txt
+            exit 1
+          fi
+          echo "ANON_ORDER_READ_BLOCKED_WITH_PUBLISHABLE_KEY $code"
 
       - name: Verify deployed Host runtime + Arabic speech with Playwright
         env:
