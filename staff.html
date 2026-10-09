@@ -148,6 +148,20 @@ async function updateStatus(id,status){
 document.getElementById("filter").onchange=()=>render(rows);
 document.getElementById("refresh").onclick=load;
 document.getElementById("logout").onclick=async()=>{ if(realtimeChannel) await supabase.removeChannel(realtimeChannel); realtimeChannel=null; await supabase.auth.signOut(); };
+let authCooldownTimer=null;
+function startAuthCooldown(seconds=60){
+  const button=document.querySelector('#login-form button[type="submit"]');
+  const status=document.getElementById("auth-status");
+  const until=Date.now()+Math.max(1,seconds)*1000;
+  if(authCooldownTimer)clearInterval(authCooldownTimer);
+  const tick=()=>{
+    const remaining=Math.max(0,Math.ceil((until-Date.now())/1000));
+    if(button){button.disabled=remaining>0;button.textContent=remaining>0?"إعادة الإرسال بعد "+remaining+" ث":"إرسال رابط الدخول";}
+    if(remaining===0&&authCooldownTimer){clearInterval(authCooldownTimer);authCooldownTimer=null;if(status)status.textContent="يمكنك طلب رابط جديد الآن.";}
+  };
+  tick();
+  authCooldownTimer=setInterval(tick,250);
+}
 document.getElementById("login-form").onsubmit=async e=>{
  e.preventDefault();
  const email=document.getElementById("email").value.trim().toLowerCase();
@@ -171,6 +185,10 @@ document.getElementById("login-form").onsubmit=async e=>{
    if(!response.ok){
      const reason=body.msg||body.message||body.error_description||body.error||("HTTP "+response.status);
      status.textContent="رفض Supabase إرسال الرابط ("+response.status+"): "+reason;
+     if(response.status===429){
+       const match=String(reason).match(/after\\s+(\\d+)\\s+seconds/i);
+       startAuthCooldown(match?Number(match[1])+1:60);
+     }
    }else{
      status.textContent="قبل Supabase طلب الإرسال. افحص البريد الوارد والرسائل غير المرغوب فيها. إذا لم يصل، فراجع إعداد SMTP وحدّ الإرسال في Supabase.";
    }
@@ -178,7 +196,7 @@ document.getElementById("login-form").onsubmit=async e=>{
    status.textContent=error?.name==="AbortError"
      ?"انتهت مهلة الاتصال بعد 12 ثانية. لم يصل رد من Supabase؛ تحقق من الاتصال ثم أعد المحاولة."
      :"فشل الاتصال بـ Supabase: "+(error?.message||String(error));
- }finally{button.disabled=false}
+ }finally{if(!authCooldownTimer)button.disabled=false}
 };
 if(authError){
  const status=document.getElementById("auth-status");
