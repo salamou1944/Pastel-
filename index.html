@@ -57,7 +57,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 .floating-actions button:hover{transform:translateY(-3px) scale(1.03);background:rgba(232,201,159,.16);border-color:rgba(232,201,159,.7)}
 .floating-actions button:nth-child(1){top:27%;left:7%}.floating-actions button:nth-child(2){top:43%;left:4%}.floating-actions button:nth-child(3){top:59%;left:8%}.floating-actions button:nth-child(4){top:35%;right:7%}.floating-actions button:nth-child(5){top:56%;right:5%}
 @media(max-width:820px){.floating-actions button{padding:9px 12px;font-size:11px}.floating-actions button:nth-child(1){top:25%;left:4%}.floating-actions button:nth-child(2){top:40%;left:2%}.floating-actions button:nth-child(3){top:58%;left:4%}.floating-actions button:nth-child(4){top:34%;right:3%}.floating-actions button:nth-child(5){top:55%;right:2%}}
-</style></head>
+</style><style>.host-conversation{margin:18px 0;border:1px solid #e8c99f33;border-radius:18px;padding:12px;background:#08070677}.conversation-log{display:grid;gap:8px;max-height:230px;overflow:auto;margin-bottom:10px}.conversation-message{max-width:94%;padding:10px 12px;border-radius:13px;font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}.conversation-message.assistant{justify-self:start;background:#e8c99f15;border:1px solid #e8c99f20}.conversation-message.user{justify-self:end;background:#e8c99f;color:#1a120d}.conversation-controls{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px}.conversation-controls input{min-width:0;border:1px solid #fff2;background:#080706;color:#fff;border-radius:12px;padding:11px;font:inherit}#host-listen{min-width:44px}@media(max-width:520px){.conversation-controls{grid-template-columns:minmax(0,1fr) auto}.conversation-controls #host-listen{grid-column:2;grid-row:1}}</style></head>
 <body>
 <div id="cinematic-entry" aria-label="PASTEL entrance">
   <div class="entry-backdrop"></div>
@@ -87,6 +87,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 <h1>مرحباً.
 أنا هنا لخدمتك.</h1>
 <p>اسألني عن المعلومات الموثقة لدينا. إذا لم تكن المعلومة مثبتة، لن أخمّن.</p>
+<div id="host-conversation" class="host-conversation"><div id="conversation-log" class="conversation-log" aria-live="polite"><div class="conversation-message assistant">أهلاً بك. اكتب سؤالك أو استخدم الميكروفون إذا كان متاحاً.</div></div><div class="conversation-controls"><input id="host-message" type="text" autocomplete="off" placeholder="اكتب رسالتك للمضيف…" aria-label="رسالتك للمضيف"><button id="host-send" class="primary" type="button">إرسال</button><button id="host-listen" type="button" aria-label="التحدث إلى المضيف">🎙</button></div><div id="host-conversation-status" class="note" aria-live="polite">محادثة نصية مع إدخال صوتي اختياري.</div></div>
 <div id="questions" class="questions"></div>
 <div id="answer" class="answer">اختر سؤالاً لأجيبك.</div>
 <div class="actions"><button id="speak" class="primary">استمع للإجابة</button><button id="stop">إيقاف الصوت</button></div>
