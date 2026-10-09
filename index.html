@@ -216,10 +216,44 @@ function pickArabicMaleVoice(){
       || voices.find(v=>/^ar-/i.test(v.lang||""))
       || null;
 }
+const ARABIC_VISEME={
+  "ا":"viseme_aa","أ":"viseme_aa","إ":"viseme_aa","آ":"viseme_aa","ع":"viseme_aa","ح":"viseme_aa",
+  "و":"viseme_O","ؤ":"viseme_O","ض":"viseme_O","ظ":"viseme_O",
+  "ي":"viseme_I","ى":"viseme_I","ئ":"viseme_I",
+  "ب":"viseme_PP","م":"viseme_PP",
+  "ف":"viseme_FF","ڤ":"viseme_FF",
+  "ت":"viseme_DD","د":"viseme_DD","ط":"viseme_DD","ن":"viseme_nn","ل":"viseme_nn",
+  "ك":"viseme_kk","ق":"viseme_kk",
+  "ج":"viseme_CH","ش":"viseme_CH","چ":"viseme_CH",
+  "س":"viseme_SS","ص":"viseme_SS","ز":"viseme_SS","ث":"viseme_TH","ذ":"viseme_TH",
+  "ر":"viseme_RR","غ":"viseme_RR","خ":"viseme_RR","ه":"viseme_E"
+};
+let speechVisemeTimer=0;
+let speechVisemeIndex=0;
+let speechVisemeCount=0;
+function setSpeechViseme(char){
+  const name=ARABIC_VISEME[char]||"viseme_aa";
+  try{
+    agent?.setMorph?.(name,0.82);
+    for(const other of ["viseme_aa","viseme_CH","viseme_DD","viseme_E","viseme_FF","viseme_I","viseme_kk","viseme_nn","viseme_O","viseme_PP","viseme_RR","viseme_SS","viseme_TH","viseme_U"]){
+      if(other!==name)agent?.setMorph?.(other,0);
+    }
+    window.__PASTEL_LIPSYNC_DIAG__={mode:"speech-boundary-text-viseme",lastViseme:name,events:(window.__PASTEL_LIPSYNC_DIAG__?.events||0)+1};
+    speechVisemeCount++;
+  }catch{}
+}
+function clearSpeechVisemes(){
+  clearTimeout(speechVisemeTimer);
+  for(const name of ["viseme_aa","viseme_CH","viseme_DD","viseme_E","viseme_FF","viseme_I","viseme_kk","viseme_nn","viseme_O","viseme_PP","viseme_RR","viseme_SS","viseme_TH","viseme_U"]){
+    try{agent?.setMorph?.(name,0)}catch{}
+  }
+}
 function speak(text){
   const clean=String(text||"").trim();
   if(!clean)return;
   speechSynthesis?.cancel();
+  clearSpeechVisemes();
+  speechVisemeIndex=0;speechVisemeCount=0;
   try{agent?.lookAt("user");agent?.play("talk")}catch{}
   const u=new SpeechSynthesisUtterance(clean);
   const v=pickArabicMaleVoice();
@@ -228,11 +262,25 @@ function speak(text){
   u.rate=0.90;
   u.pitch=0.88;
   u.volume=1;
-  u.onend=()=>{try{agent?.play("idle")}catch{}};
-  u.onerror=()=>{try{agent?.play("idle")}catch{}};
+  const chars=[...clean];
+  u.onboundary=(event)=>{
+    const idx=Math.max(0,Math.min(chars.length-1,Number(event.charIndex)||speechVisemeIndex));
+    speechVisemeIndex=idx;
+    setSpeechViseme(chars[idx]||"ا");
+    clearTimeout(speechVisemeTimer);
+    speechVisemeTimer=setTimeout(()=>{try{agent?.setMorph?.(window.__PASTEL_LIPSYNC_DIAG__?.lastViseme||"viseme_aa",0.12)}catch{}},Math.max(80,170/u.rate));
+  };
+  u.onend=()=>{clearSpeechVisemes();try{agent?.play("idle")}catch{}};
+  u.onerror=()=>{clearSpeechVisemes();try{agent?.play("idle")}catch{}};
   speechSynthesis?.speak(u);
-  window.__PASTEL_SPEAK_DIAG__={calls:(window.__PASTEL_SPEAK_DIAG__?.calls||0)+1,voice:v?.name||null,lang:u.lang,rate:u.rate,pitch:u.pitch,runtime:"three-ws-avatar"};
+  window.__PASTEL_SPEAK_DIAG__={calls:(window.__PASTEL_SPEAK_DIAG__?.calls||0)+1,voice:v?.name||null,lang:u.lang,rate:u.rate,pitch:u.pitch,runtime:"three-ws-avatar",lipsync:"speech-boundary-text-viseme"};
 }
+window.__PASTEL_LIPSYNC_TEST__=(text="أهلاً بك في باستيل")=>{
+  const chars=[...String(text||"")].filter(ch=>/[ء-ي]/.test(ch));
+  for(const ch of chars.slice(0,12))setSpeechViseme(ch);
+  clearSpeechVisemes();
+  return {mode:"speech-boundary-text-viseme",events:speechVisemeCount,last:window.__PASTEL_LIPSYNC_DIAG__?.lastViseme||null,apiAvailable:typeof agent?.setMorph==="function"};
+};
 window.__PASTEL_SPEAK__=speak;
 let hostOrderMode=false;
 const hostLog=document.getElementById("conversation-log");
