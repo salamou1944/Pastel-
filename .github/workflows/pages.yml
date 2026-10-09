@@ -151,6 +151,20 @@ jobs:
           if (!/لن أخمّن|غير متوفرة/i.test(hostConversation.answer)) throw new Error("Host price question did not use safe grounded response: "+JSON.stringify(hostConversation));
           if (hostConversation.logMessages < 3) throw new Error("Host conversation did not append user and assistant turns: "+JSON.stringify(hostConversation));
           console.log("HOST_CONVERSATION_SMOKE_OK "+JSON.stringify(hostConversation));
+          // Isolated conversation test: order intent must create a draft without submitting it.
+          const conversationPage = await browser.newPage();
+          await conversationPage.goto(url, {waitUntil:"networkidle", timeout:60000});
+          await conversationPage.waitForFunction(() => !!window.__PASTEL_HOST_CONVERSATION__?.process, null, {timeout:30000});
+          const orderConversation = await conversationPage.evaluate(() => {
+            window.__PASTEL_HOST_CONVERSATION__.process("أريد طلب");
+            const started = {mode:window.__PASTEL_HOST_CONVERSATION__.getMode(),panelOpen:!document.querySelector("#order-panel")?.hidden};
+            window.__PASTEL_HOST_CONVERSATION__.process("قهوة");
+            return {...started, lines:document.querySelector("#order-lines")?.innerText||"", status:document.querySelector("#order-status")?.textContent||""};
+          });
+          if (!orderConversation.mode || !orderConversation.panelOpen || !/قهوة/.test(orderConversation.lines)) throw new Error("Host did not turn natural-language order into an editable draft: "+JSON.stringify(orderConversation));
+          if (/تم تأكيد الطلب رقم/.test(orderConversation.status)) throw new Error("Host falsely confirmed an order before submission: "+JSON.stringify(orderConversation));
+          console.log("HOST_ORDER_DRAFT_SMOKE_OK "+JSON.stringify(orderConversation));
+          await conversationPage.close();
           // Real customer journey smoke: exercise the production Order UI and backend.
           const orderButton = page.locator('.floating-actions button[data-action="order"]').first();
           if (await orderButton.count()) await orderButton.click();
