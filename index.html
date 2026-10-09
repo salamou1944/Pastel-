@@ -234,6 +234,63 @@ function speak(text){
   window.__PASTEL_SPEAK_DIAG__={calls:(window.__PASTEL_SPEAK_DIAG__?.calls||0)+1,voice:v?.name||null,lang:u.lang,rate:u.rate,pitch:u.pitch,runtime:"three-ws-avatar"};
 }
 window.__PASTEL_SPEAK__=speak;
+let hostOrderMode=false;
+const hostLog=document.getElementById("conversation-log");
+const hostInput=document.getElementById("host-message");
+const hostTalkStatus=document.getElementById("host-conversation-status");
+function hostMessageLine(text,role){
+  const node=document.createElement("div");
+  node.className="conversation-message "+role;
+  node.textContent=text;
+  hostLog?.appendChild(node);
+  if(hostLog)hostLog.scrollTop=hostLog.scrollHeight;
+}
+function hostAnswer(text){
+  document.getElementById("answer").textContent=text;
+  hostMessageLine(text,"assistant");
+  try{agent?.lookAt("user");agent?.nod()}catch{}
+  speak(text);
+}
+function hostNormalize(value){
+  return String(value||"").toLowerCase().replace(/[إأآٱ]/g,"ا").replace(/ى/g,"ي").replace(/[ًٌٍَُِّْـ]/g,"").replace(/\s+/g," ").trim();
+}
+function hostTurn(raw){
+  const text=String(raw||"").trim();
+  if(!text)return;
+  hostMessageLine(text,"user");
+  const n=hostNormalize(text);
+  const has=words=>words.some(word=>n.includes(word));
+  if(hostOrderMode&&has(["الغاء الطلب","وقف الطلب","لا اريد الطلب"])){hostOrderMode=false;hostAnswer("حسناً، أوقفت جمع الطلب. لم يتم إرسال طلب جديد.");return}
+  if(hostOrderMode&&text.length>1){
+    openOrder(text,1);
+    hostAnswer("أضفت «"+text+"» إلى مسودة الطلب بكمية 1. يمكنك تعديل الكمية ثم إرسال الطلب لتسجيله فعلياً.");
+    return;
+  }
+  if(has(["اطلب","طلب","اوردر","order","commande","نحب نطلب","بغيت نطلب"])){
+    hostOrderMode=true;openOrder();
+    hostAnswer("بالتأكيد. ما اسم العنصر الذي تريد طلبه؟ سأضيفه إلى مسودة الطلب، ولن يُرسل شيء قبل ضغطك على إرسال الطلب.");return;
+  }
+  if(has(["سعر","اسعار","الثمن","بشحال","بكم","price","prix"])){hostAnswer("قائمة الأسعار الكاملة غير متوفرة لدي بشكل موثق حالياً، لذلك لن أخمّن السعر. يمكنك التواصل مع الفريق للتأكد.");return}
+  if(has(["متوفر","التوفر","متاح","عندكم اليوم","available"])){hostAnswer("لا أملك اتصالاً موثقاً بالمخزون الحي حالياً، لذلك لا أستطيع تأكيد التوفر. يمكن لفريق PASTEL تأكيده مباشرة.");return}
+  if(has(["الموقع","العنوان","وين","اين","مكانكم","location","adresse"])){hostAnswer("العنوان: Résidence El Chourouk، Akid Lotfi، Oran 31000، Algeria. Plus Code: PCF8+P4V.");return}
+  if(has(["اتصل","الهاتف","واتساب","whatsapp","contact"])){hostAnswer("يمكنك التواصل مع PASTEL عبر واتساب أو الهاتف على +213 541 33 28 77، أو البريد sarl.pastel.pastry@gmail.com.");return}
+  if(has(["سلام","السلام عليكم","مرحبا","اهلا","صباح الخير","مساء الخير","bonjour","hello"])){hostAnswer("وعليكم السلام وأهلاً بك في PASTEL. أستطيع مساعدتك في معلومات المكان أو بدء مسودة طلب. ماذا ترغب؟");return}
+  if(has(["القائمة","المنيو","الحلويات","المشروبات","menu","dessert"])){hostAnswer("لدينا pâtisseries وviennoiseries وmillefeuille وalmond croissant وmacarons والتارت والكيك، إضافة إلى القهوة والشاي والمشروبات. هذه معلومات عامة وليست قائمة مخزون حي أو أسعار.");return}
+  const known=Q.find(entry=>n.includes(hostNormalize(entry[0])));
+  if(known){hostAnswer(known[1]);return}
+  hostAnswer("أريد أن أجيبك بدقة، لكنني لا أملك معلومة موثقة عن هذا السؤال حالياً. يمكنني مساعدتك في بدء طلب أو إعطائك العنوان ووسائل التواصل.");
+}
+document.getElementById("host-send")?.addEventListener("click",()=>{const value=hostInput?.value||"";if(hostInput)hostInput.value="";hostTurn(value)});
+hostInput?.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();document.getElementById("host-send")?.click()}});
+const HostSpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+const hostListen=document.getElementById("host-listen");
+if(HostSpeechRecognition){
+  const recognition=new HostSpeechRecognition();recognition.lang="ar-DZ";recognition.interimResults=false;recognition.maxAlternatives=1;
+  hostListen?.addEventListener("click",()=>{if(hostTalkStatus)hostTalkStatus.textContent="أستمع إليك…";try{recognition.start()}catch{if(hostTalkStatus)hostTalkStatus.textContent="تعذر بدء الميكروفون؛ يمكنك الكتابة بدلاً منه."}});
+  recognition.onresult=event=>{const heard=event.results?.[0]?.[0]?.transcript||"";if(hostInput)hostInput.value=heard;if(heard)hostTurn(heard);if(hostTalkStatus)hostTalkStatus.textContent=heard?"تم التقاط الكلام ومعالجته.":"لم ألتقط كلاماً واضحاً."};
+  recognition.onerror=event=>{if(hostTalkStatus)hostTalkStatus.textContent="تعذر الإدخال الصوتي ("+event.error+"). يمكنك الكتابة بدلاً منه."};
+}else{if(hostListen){hostListen.disabled=true;hostListen.title="الإدخال الصوتي غير مدعوم في هذا المتصفح"}if(hostTalkStatus)hostTalkStatus.textContent="الإدخال الصوتي غير مدعوم في هذا المتصفح؛ استخدم الكتابة."}
+window.__PASTEL_HOST_CONVERSATION__={process:hostTurn,getMode:()=>hostOrderMode,capabilities:["grounded-faq","order-draft","price-safe-fallback","availability-safe-fallback","browser-speech-input"]};
 document.getElementById("speak").onclick=()=>last&&speak(last);
 document.getElementById("stop").onclick=()=>{speechSynthesis?.cancel();try{agent?.play("idle")}catch{}};
 
