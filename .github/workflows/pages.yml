@@ -26,17 +26,12 @@ jobs:
       - name: Fetch Host avatars with explicit source and licensing
         run: |
           mkdir -p assets
-          # Existing root Host candidate; do not market it until its commercial rights are verified.
-          curl -L --fail --retry 3 --retry-delay 2 \
-            -o assets/pastel-host.glb \
-            https://raw.githubusercontent.com/nirholas/three.ws/238ef6089554773f3485e13b8e463670ab5988d8/public/avatars/realistic-male.glb
-          # TalkingHead's MPFB example avatar is documented upstream as CC0; pin the source commit.
+          # The pinned TalkingHead MPFB example is documented upstream as CC0.
           curl -L --fail --retry 3 --retry-delay 2 \
             -o assets/mpfb.glb \
             https://raw.githubusercontent.com/met4citizen/TalkingHead/6318ff8c798e4a661fcd70c9373c4ab789c822bb/avatars/mpfb.glb
-          test -s assets/pastel-host.glb
           test -s assets/mpfb.glb
-          file assets/pastel-host.glb assets/mpfb.glb
+          file assets/mpfb.glb
       - name: Validate Host module syntax
         run: |
           python - <<'PY'
@@ -61,12 +56,9 @@ jobs:
           grep -F '/auth/v1/otp?redirect_to=' staff.html >/dev/null
           grep -F 'authError' staff.html >/dev/null
           echo "STAFF_MAGIC_LINK_CALLBACK_AND_REALTIME_OK"
-      - name: Verify Host GLB structure
+      - name: Verify shared CC0 MPFB avatar structure
         run: |
-          node -e "const fs=require('fs');const b=fs.readFileSync('assets/pastel-host.glb');if(b.readUInt32LE(0)!==0x46546c67)throw Error('invalid GLB');const j=JSON.parse(b.subarray(20,20+b.readUInt32LE(12)).toString().trim());const nodes=(j.nodes||[]).map(x=>x.name||'');const skins=j.skins||[];const anim=(j.animations||[]).map(x=>x.name||'');const head=nodes.find(n=>/head/i.test(n)&&!/head(?:top|end|tip)$/i.test(n));if(!skins.length||!head)throw Error('missing skeleton/head');console.log(JSON.stringify({skins:skins.length,bones:skins.reduce((n,s)=>n+(s.joints||[]).length,0),headBone:head,animations:anim},null,2));"
-      - name: Verify Premium MPFB GLB structure
-        run: |
-          node -e "const fs=require('fs');const b=fs.readFileSync('assets/mpfb.glb');if(b.readUInt32LE(0)!==0x46546c67)throw Error('invalid MPFB GLB');const n=b.readUInt32LE(12);const j=JSON.parse(b.subarray(20,20+n).toString().trim());if(!(j.skins||[]).length)throw Error('MPFB avatar has no skin/skeleton');if(!(j.nodes||[]).length)throw Error('MPFB avatar has no nodes');console.log(JSON.stringify({asset:'assets/mpfb.glb',nodes:j.nodes.length,skins:j.skins.length,meshes:(j.meshes||[]).length,animations:(j.animations||[]).length},null,2));"
+          node -e "const fs=require('fs');const b=fs.readFileSync('assets/mpfb.glb');if(b.readUInt32LE(0)!==0x46546c67)throw Error('invalid MPFB GLB');const n=b.readUInt32LE(12);const j=JSON.parse(b.subarray(20,20+n).toString().trim());const nodes=(j.nodes||[]).map(x=>x.name||'');const skins=j.skins||[];const head=nodes.find(n=>/head/i.test(n)&&!/head(?:top|end|tip)$/i.test(n));if(!skins.length||!head)throw Error('MPFB missing skeleton/head');console.log(JSON.stringify({asset:'assets/mpfb.glb',nodes:nodes.length,skins:skins.length,bones:skins.reduce((n,s)=>n+(s.joints||[]).length,0),headBone:head,meshes:(j.meshes||[]).length,animations:(j.animations||[]).map(x=>x.name||'')},null,2));"
       - uses: actions/upload-pages-artifact@v4
         with:
           path: .
