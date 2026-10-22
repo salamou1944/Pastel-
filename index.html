@@ -72,7 +72,7 @@ body{min-height:100vh;background:radial-gradient(circle at 70% 8%,#e8c99f2b,tran
 <video id="live-cafe" playsinline muted autoplay preload="metadata" aria-label="البث المباشر للمقهى"></video>
 <div class="live-cafe-shade"></div>
 <div id="live-cafe-badge" class="live-cafe-badge">LIVE · PASTEL CAFE</div>
-<div id="avatar"><agent-3d id="pastel-agent" src="./assets/pastel-host.glb" clip="idle" kiosk eager mode="inline" style="display:block;width:100%;height:100%;"></agent-3d></div>
+<div id="avatar"><agent-3d id="pastel-agent" src="./assets/mpfb.glb" clip="idle" kiosk eager mode="inline" style="display:block;width:100%;height:100%;"></agent-3d></div>
 <div class="floating-actions" aria-label="PASTEL actions">
   <button data-action="ask">اسأل Host</button>
   <button data-action="menu">القائمة</button>
@@ -118,7 +118,7 @@ const status=document.getElementById("status");
 
 window.__PASTEL_HOST_MODULE_BOOT__="started";
 window.__PASTEL_HOST_VERIFY__={
-  model:"./assets/pastel-host.glb",
+  model:"./assets/mpfb.glb",
   runtime:"@three-ws/avatar@0.2.3",
   framing:"full-body",
   state:"loading",
