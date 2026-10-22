@@ -255,6 +255,68 @@ jobs:
           console.log("PREMIUM_ROUTE_SMOKE_OK " + JSON.stringify({...premiumRuntime, answer:premiumAnswer}));
           await premiumPage.close();
 
+          // Standard route smoke: verify the route-specific asset path, grounded price answer, and contact actions.
+          const standardPage = await browser.newPage({viewport:{width:390,height:844}, deviceScaleFactor:1});
+          const standardErrors = [];
+          standardPage.on("pageerror", err => standardErrors.push(String(err?.message || err)));
+          standardPage.on("console", msg => { if (msg.type() === "error") standardErrors.push(msg.text()); });
+          const standardUrl = new URL("host-standard/", premiumBase).toString();
+          await standardPage.goto(standardUrl, {waitUntil:"networkidle", timeout:60000});
+          await standardPage.waitForFunction(() => {
+            const canvas = document.querySelector("#avatar canvas");
+            const status = document.querySelector("#status")?.textContent || "";
+            return !!canvas && /جاهز|متصل/.test(status);
+          }, null, {timeout:45000});
+          const standardRuntime = await standardPage.evaluate(() => ({
+            canvas:!!document.querySelector("#avatar canvas"),
+            canvasWidth:document.querySelector("#avatar canvas")?.width||0,
+            canvasHeight:document.querySelector("#avatar canvas")?.height||0,
+            status:document.querySelector("#status")?.textContent||"",
+            viewport:{width:innerWidth,height:innerHeight},
+            documentWidth:document.documentElement.scrollWidth,
+            contacts:["#wa","#call","#email","#maps"].map(sel=>({sel,href:document.querySelector(sel)?.getAttribute("href")||""}))
+          }));
+          if (!standardRuntime.canvas || standardRuntime.canvasWidth<100 || standardRuntime.canvasHeight<100)
+            throw new Error("Standard avatar canvas not rendered: "+JSON.stringify(standardRuntime));
+          if (standardRuntime.documentWidth>standardRuntime.viewport.width+1)
+            throw new Error("Standard route has horizontal overflow on mobile: "+JSON.stringify(standardRuntime));
+          if (standardRuntime.contacts.some(x=>!x.href || x.href==="#"))
+            throw new Error("Standard contact action missing href: "+JSON.stringify(standardRuntime.contacts));
+          const standardPriceButton = standardPage.locator("#questions button").filter({hasText:"الأسعار"}).first();
+          if (await standardPriceButton.count()) await standardPriceButton.click();
+          else throw new Error("Standard route price question button missing");
+          const standardAnswer = await standardPage.locator("#answer").textContent();
+          if (!/لن أخمّن|لن أخمن|غير متوفرة|غير متوفرة لدي/i.test(standardAnswer||""))
+            throw new Error("Standard price fallback is not safe/grounded: "+standardAnswer);
+          if (standardErrors.length) throw new Error("Standard route browser errors: "+standardErrors.join(" | "));
+          console.log("STANDARD_MOBILE_ROUTE_SMOKE_OK "+JSON.stringify({...standardRuntime,answer:standardAnswer}));
+          await standardPage.close();
+
+          // Premium responsive smoke at a phone-sized viewport.
+          const mobilePremium = await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+          const mobileErrors = [];
+          mobilePremium.on("pageerror", err => mobileErrors.push(String(err?.message || err)));
+          await mobilePremium.goto(premiumUrl,{waitUntil:"networkidle",timeout:60000});
+          await mobilePremium.waitForFunction(() => window.__PASTEL_PREMIUM_VERIFY__?.modelLoaded === true,null,{timeout:45000});
+          const mobilePremiumRuntime = await mobilePremium.evaluate(() => ({
+            verify:window.__PASTEL_PREMIUM_VERIFY__||null,
+            canvas:!!document.querySelector("#avatar canvas"),
+            viewport:{width:innerWidth,height:innerHeight},
+            documentWidth:document.documentElement.scrollWidth,
+            stageWidth:document.querySelector(".stage")?.getBoundingClientRect().width||0,
+            stageHeight:document.querySelector(".stage")?.getBoundingClientRect().height||0,
+            contacts:["#wa","#call","#email","#maps"].map(sel=>({sel,visible:!!document.querySelector(sel),href:document.querySelector(sel)?.getAttribute("href")||""}))
+          }));
+          if (!mobilePremiumRuntime.canvas || mobilePremiumRuntime.stageWidth<300 || mobilePremiumRuntime.stageHeight<400)
+            throw new Error("Premium mobile layout/avatar invalid: "+JSON.stringify(mobilePremiumRuntime));
+          if (mobilePremiumRuntime.documentWidth>mobilePremiumRuntime.viewport.width+1)
+            throw new Error("Premium route has horizontal overflow on mobile: "+JSON.stringify(mobilePremiumRuntime));
+          if (mobilePremiumRuntime.contacts.some(x=>!x.visible || !x.href || x.href==="#"))
+            throw new Error("Premium mobile contact actions incomplete: "+JSON.stringify(mobilePremiumRuntime.contacts));
+          if (mobileErrors.length) throw new Error("Premium mobile browser errors: "+mobileErrors.join(" | "));
+          console.log("PREMIUM_MOBILE_ROUTE_SMOKE_OK "+JSON.stringify(mobilePremiumRuntime));
+          await mobilePremium.close();
+
           console.log(JSON.stringify({
             url,
             agentPresent:runtime.agentPresent,
