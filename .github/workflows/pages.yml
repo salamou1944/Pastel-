@@ -265,8 +265,15 @@ jobs:
           await standardPage.waitForFunction(() => {
             const canvas = document.querySelector("#avatar canvas");
             const status = document.querySelector("#status")?.textContent || "";
-            return !!canvas && /جاهز|متصل/.test(status);
-          }, null, {timeout:45000});
+            return (!!canvas && /جاهز|متصل|تعذر/.test(status)) || /تعذر تشغيل محرك المضيف/.test(status);
+          }, null, {timeout:45000}).catch(async err => {
+            const diagnostic = await standardPage.evaluate(() => ({
+              status: document.querySelector("#status")?.textContent || "",
+              canvas: !!document.querySelector("#avatar canvas"),
+              modelUrl: window.HOST_CONFIG?.host?.modelUrl || null
+            }));
+            throw new Error("Standard route did not reach a terminal avatar state: " + JSON.stringify(diagnostic) + "; " + err.message);
+          });
           const standardRuntime = await standardPage.evaluate(() => ({
             canvas:!!document.querySelector("#avatar canvas"),
             canvasWidth:document.querySelector("#avatar canvas")?.width||0,
@@ -276,6 +283,8 @@ jobs:
             documentWidth:document.documentElement.scrollWidth,
             contacts:["#wa","#call","#email","#maps"].map(sel=>({sel,href:document.querySelector(sel)?.getAttribute("href")||""}))
           }));
+          if (!/جاهز|متصل/.test(standardRuntime.status))
+            throw new Error("Standard avatar did not become ready: "+JSON.stringify(standardRuntime)+"; browserErrors="+standardErrors.join(" | "));
           if (!standardRuntime.canvas || standardRuntime.canvasWidth<100 || standardRuntime.canvasHeight<100)
             throw new Error("Standard avatar canvas not rendered: "+JSON.stringify(standardRuntime));
           if (standardRuntime.documentWidth>standardRuntime.viewport.width+1)
