@@ -230,7 +230,8 @@ jobs:
           const premiumErrors = [];
           premiumPage.on("pageerror", err => premiumErrors.push(String(err?.message || err)));
           premiumPage.on("console", msg => { if (msg.type() === "error") premiumErrors.push(msg.text()); });
-          const premiumUrl = new URL("host-premium/", url).toString();
+          const premiumBase = url.endsWith("/") ? url : url + "/";
+          const premiumUrl = new URL("host-premium/", premiumBase).toString();
           await premiumPage.goto(premiumUrl, {waitUntil:"networkidle", timeout:60000});
           await premiumPage.waitForFunction(() => window.__PASTEL_PREMIUM_VERIFY__?.modelLoaded === true, null, {timeout:45000});
           const premiumRuntime = await premiumPage.evaluate(() => ({
