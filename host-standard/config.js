@@ -1,7 +1,7 @@
 window.HOST_CONFIG = {
   brand: {
     name: "PASTEL PASTRY&COFFEE",
-    badge: "PASTEL HOST · REALISTIC 3D",
+    badge: "PASTEL HOST · STANDARD 3D",
     eyebrow: "PASTEL PASTRY&COFFEE",
     title: "مرحباً.\nأنا هنا لخدمتك.",
     subtitle: "اسألني عن الأشياء التي نملك معلومات موثقة عنها. إذا لم تكن المعلومة مثبتة، لن أخمّن."
@@ -26,13 +26,13 @@ window.HOST_CONFIG = {
   },
 
   host: {
-    modelUrl: "../assets/pastel-host.glb",
+    modelUrl: "../assets/mpfb.glb",
     fallbackModelUrls: [],
     dracoEnabled: false,
-    body: "M",
-    mood: "neutral",
+    body: "F",
+    mood: "happy",
     view: "upper",
-    source: "three.ws realistic-male GLB candidate vendored at build time for functional validation; commercial provenance/licence still requires verification before paid customer redistribution"
+    source: "TalkingHead MPFB example pinned in the Pages workflow; upstream documentation identifies it as CC0. The Standard route may fall back to direct Three.js rendering if TalkingHead cannot animate this generic GLB."
   },
 
   language: {
