@@ -42,6 +42,20 @@ jobs:
           open("/tmp/pastel-host-module.mjs","w",encoding="utf-8").write(m.group(1))
           PY
           node --check /tmp/pastel-host-module.mjs
+      - name: Validate Standard Host import map and module syntax
+        run: |
+          python - <<'PY'
+          import json, re
+          h=open("host-standard/index.html",encoding="utf-8").read()
+          im=re.search(r'<script type="importmap">\s*(.*?)\s*</script>',h,re.S)
+          if not im: raise SystemExit("Standard import map missing")
+          json.loads(im.group(1))
+          m=re.search(r'<script type="module">\s*(.*?)\s*</script>',h,re.S)
+          if not m: raise SystemExit("Standard module script missing")
+          open("/tmp/pastel-standard.mjs","w",encoding="utf-8").write(m.group(1))
+          print("STANDARD_IMPORTMAP_JSON_OK")
+          PY
+          node --check /tmp/pastel-standard.mjs
       - name: Validate Staff Queue module syntax
         run: |
           python - <<'PY'
