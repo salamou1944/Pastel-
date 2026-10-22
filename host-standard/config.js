@@ -26,7 +26,7 @@ window.HOST_CONFIG = {
   },
 
   host: {
-    modelUrl: "./assets/pastel-host.glb",
+    modelUrl: "../assets/pastel-host.glb",
     fallbackModelUrls: [],
     dracoEnabled: false,
     body: "M",

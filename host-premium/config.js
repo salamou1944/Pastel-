@@ -12,7 +12,7 @@ window.PASTEL_PREMIUM = {
     surface: "rgba(24,18,14,.78)"
   },
   host: {
-    modelUrl: "../assets/brunette.glb",
+    modelUrl: "../assets/mpfb.glb",
     body: "F",
     mood: "happy",
     view: "mid"
