@@ -1,23 +1,25 @@
 {
   "product": "PASTEL HOST",
   "version": "premium-3d",
-  "runtime": "TalkingHead + Three.js",
-  "avatar": "../assets/brunette.glb",
+  "runtime": "Three.js + GLTFLoader",
+  "avatar": "../assets/mpfb.glb",
+  "avatarLicense": "CC0 (TalkingHead MPFB example avatar; upstream source commit 6318ff8c798e4a661fcd70c9373c4ab789c822bb)",
   "language": "ar-DZ",
   "features": [
-    "real-human-glb-3d-avatar",
-    "idle-head-and-eye-movement",
-    "speaking-mouth-animation",
+    "3d-glb-avatar-rendering",
+    "subtle-idle-body-sway",
     "arabic-browser-speech",
-    "faster-speech-rate",
-    "interactive-gestures",
-    "knowledge-answers",
+    "verified-knowledge-answers",
+    "price-safe-fallback",
     "contact-actions",
     "responsive-mobile"
   ],
   "limitations": [
+    "avatar appearance/gender must be visually confirmed before production",
     "browser speech remains device/voice dependent",
-    "true Arabic phoneme-level lip-sync is not certified in this runtime"
+    "true Arabic phoneme-level lip-sync is not implemented or certified in this route",
+    "head/eye tracking and discrete gestures are not implemented in this Three.js route",
+    "live prices, stock, reservations, and delivery are not verified"
   ],
-  "status": "animated-runtime-source-ready"
+  "status": "route-smoke-required-before-customer-release"
 }
