@@ -9,7 +9,6 @@
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
-    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs"
   }
 }
 </script>
@@ -72,7 +71,6 @@ button{font:inherit;border:1px solid rgba(255,255,255,.10);background:rgba(255,2
 </section>
 </div>
 <script type="module">
-import { TalkingHead } from "talkinghead";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
@@ -199,53 +197,17 @@ function startDirectAvatar(url){
 }
 
 async function startHost(){
+  window.__PASTEL_STANDARD_VERIFY__={modelLoaded:false,modelUrl:C.host.modelUrl,state:"loading",renderer:"three.js"};
   try{
-    const head=new TalkingHead($("avatar"),{
-      lipsyncModules:["en","de","fr","fi","lt","pt"],
-      mixerGainSpeech:3
-    });
-    const avatarOptions={
-      body:C.host.body||"M",
-      avatarMood:C.host.mood||"neutral",
-      avatarSpeakingHeadMove:.45,
-      avatarListeningEyeContact:.65,
-      avatarSpeakingEyeContact:.7
-    };
-    const candidates=[
-      C.host.modelUrl,
-      ...(Array.isArray(C.host.fallbackModelUrls) ? C.host.fallbackModelUrls : []),
-      C.host.fallbackModelUrl
-    ].filter(Boolean);
-    let loaded=false;
-    let lastErr=null;
-    for(const url of [...new Set(candidates)]){
-      try{
-        await head.showAvatar({...avatarOptions,url});
-        loaded=true;
-        break;
-      }catch(err){
-        lastErr=err;
-        console.warn("PASTEL HOST avatar source failed:",url,err);
-      }
-    }
-    if(!loaded){
-      console.warn("TalkingHead avatar loading failed; using direct Three.js host fallback.",lastErr);
-      await startDirectAvatar(C.host.modelUrl);
-      hostReady=true;
-      setStatus("المضيف ثلاثي الأبعاد جاهز؛ وضع الحركة المتقدم غير متاح حالياً.","ok");
-      return;
-    }
-    try{head.setView(C.host.view||"upper",{cameraDistance:C.host.cameraDistance||1.15,cameraY:C.host.cameraY||0.02,cameraRotateX:C.host.cameraRotateX||-0.02});}catch{}
-    try{head.setLighting({lightAmbientIntensity:.72,lightDirectIntensity:1.15,lightDirectPhi:1.0,lightDirectTheta:.7,lightSpotIntensity:.35,lightSpotPhi:1.15,lightSpotTheta:.55});}catch{}
-    window.PASTEL_HEAD=head;
+    await startDirectAvatar(C.host.modelUrl);
     hostReady=true;
-    setStatus("المضيف جاهز.","ok");
+    window.__PASTEL_STANDARD_VERIFY__={modelLoaded:true,modelUrl:C.host.modelUrl,state:"ready",renderer:"three.js",motion:"subtle-idle-sway"};
+    setStatus("المضيف ثلاثي الأبعاد جاهز؛ الحركة المتقدمة غير متاحة حالياً.","ok");
   }catch(err){
-    console.error("TalkingHead failed",err);
+    console.error("PASTEL Standard avatar failed",err);
     hostReady=false;
-    setStatus("تعذر تشغيل محرك المضيف؛ مسار الحوار ما زال متاحاً.","error");
-    $("avatar").style.display="none";
-    // Keep the UI functional even if a CDN/model is unavailable.
+    window.__PASTEL_STANDARD_VERIFY__={modelLoaded:false,modelUrl:C.host.modelUrl,state:"error",error:String(err?.message||err),renderer:"three.js"};
+    setStatus("تعذر تحميل المضيف ثلاثي الأبعاد؛ يمكنك استخدام الأسئلة ووسائل التواصل.","error");
   }
 }
 startHost();
