@@ -1,51 +1,45 @@
-# PASTEL Recovery Audit — 2026-10-22
+# PASTEL Recovery Audit — 2026-10-22 (post-merge update)
 
 ## Purpose
-
-Recover the original PASTEL product direction instead of treating a green deployment as proof that the intended product exists.
+Recover the intended customer-facing PASTEL QR concierge without mistaking a green root-page deployment for proof that every route works.
 
 ## Target product
+PASTEL is intended to be a customer-facing QR concierge for PASTEL PASTRY&COFFEE in Oran: a premium, realistic female 3D host; Arabic-first conversation and speech; natural-looking idle/head/eye movement and gestures; speech-linked mouth motion; verified business knowledge; and working WhatsApp, phone, email, and map actions. The experience must be usable on a real phone and must not invent prices, opening hours, reservations, delivery, or availability.
 
-PASTEL is intended to be a customer-facing QR concierge for PASTEL PASTRY&COFFEE in Oran: a premium, realistic female 3D host; Arabic-first conversation and speech; natural-looking idle/head/eye movement and gestures; speech-linked mouth motion; verified business knowledge; and working WhatsApp, phone, email, and map actions. The page must be useful on a real phone and must not invent prices, opening hours, reservations, delivery, or availability.
+## Latest repository changes
+- Latest recovery commit merged to `main`: `6b94d929025a317ab316ee45f21acbe950901532` (2026-10-22).
+- Merged PR: [#3 — repair Pastel Premium avatar route](https://github.com/salamou1944/Pastel-/pull/3).
+- The Pages workflow now fetches a pinned TalkingHead MPFB GLB asset to `assets/mpfb.glb`, checks its GLB header/JSON/skeleton, and runs a route-specific Premium Playwright smoke.
+- Premium now uses the configured `../assets/mpfb.glb` URL, exposes `window.__PASTEL_PREMIUM_VERIFY__` when the model loads, and includes WhatsApp, call, email, and directions actions.
+- Standard now references `../assets/pastel-host.glb`, resolving its prior relative-path mismatch for a page at `/host-standard/`.
+- `host-premium/host-manifest.json` now describes the Three.js route honestly: 3D GLB rendering, subtle idle body sway, browser speech, grounded knowledge answers, safe price fallback, contact actions, and responsive layout. It explicitly does not claim phoneme-level Arabic lip-sync, head/eye tracking, or discrete gestures.
+- Asset provenance and the unresolved licensing gate for the legacy `pastel-host.glb` are recorded in `assets/README.md`.
 
-## Evidence checked on 2026-10-22
+## Verification status after merge
+- GitHub reports PR #3 merged and `main` points to merge commit `6b94d929025a317ab316ee45f21acbe950901532`.
+- The connected GitHub tool did not expose a post-merge Pages workflow run or status for that commit at the time of this update. The source workflow contains the new checks, but they are **not yet marked PASS here**.
+- The live GitHub Pages URLs could not be inspected through the available connected browser in this run. A successful merge alone does not establish that the deployed site contains the new assets or that the Premium page renders.
+- Historical workflow `37979717444` passed root-route checks before these changes. That result is not evidence for the new Premium route or the new post-merge build.
 
-- Repository: `salamou1944/Pastel-`, public, default branch `main`; connected GitHub integration has admin/push permission.
-- Latest inspected commit: `827b7f3b985201394d4e15097b469a72608cb06a` (2026-10-09).
-- GitHub Pages workflow run `37979717444` completed successfully. All listed deployment steps passed, including GLB structure validation, anonymous order-read security check, and Playwright production smoke for the root Host route.
-- That successful workflow explicitly downloads `assets/pastel-host.glb` from a third-party URL whose filename is `realistic-male.glb`; the root `host-standard/config.js` also declares `body: "M"`. This does not satisfy the original female-host direction.
-- `host-premium/config.js` and `host-premium/host-manifest.json` reference `../assets/brunette.glb`. The root repository listing has no tracked `assets/` directory; the Pages workflow creates only `assets/pastel-host.glb`. Therefore the premium route's configured avatar path is not supplied by the inspected deployment workflow. The Premium route is not proven operational by the root-route Playwright smoke.
-- `host-standard/config.js` references `./assets/pastel-host.glb` relative to `/host-standard/`, while the workflow downloads the file to root `/assets/pastel-host.glb`. This path also requires a route-specific asset or an explicit corrected relative path and a browser test of the Standard route.
-- The current root `app.js` contains deterministic Arabic/French answer routing and browser speech, but `animateArabicMouth(active){ return; }` is a no-op in that file. The separate Premium page has a different Three.js renderer and its own animation logic. These are separate implementations, not one verified shared runtime.
-- Premium configuration currently declares `voiceInput: false`, `ordering: false`, `booking: false`, and `analytics: false`; these must not be marketed as implemented capabilities.
-- `CUSTOMER-QUICKSTART.md` correctly states that a real-phone test is required before changing/printing a customer QR destination.
-- No open GitHub issues were returned by the repository issues endpoint during this audit.
+## Remaining release gates
+1. **Wait for and inspect the post-merge Pages workflow.** Require success for both GLB checks, the existing root/staff/security checks, and the new `PREMIUM_ROUTE_SMOKE_OK` output.
+2. **Inspect the published Premium route** at `https://salamou1944.github.io/Pastel-/host-premium/` and Standard route at `https://salamou1944.github.io/Pastel-/host-standard/`. Verify the canvas, correct asset path, no browser errors, and all contact links.
+3. **Verify the intended female avatar visually on a real mobile device.** The MPFB asset's existence and skeleton do not prove the visual presentation matches the product brief.
+4. **Verify Arabic speech and movement honestly.** Premium currently uses browser speech and subtle body sway; phoneme-timed Arabic mouth motion and head/eye/gesture animation are not established in this route.
+5. **Resolve rights for the legacy Standard/root model.** The pinned `three.ws` download's commercial redistribution rights have not been established. Do not bundle it into paid customer deployments until rights are verified or it is replaced.
+6. **Run the customer QR flow on a real phone.** Keep the current QR destination unchanged until the target route and all contact actions pass this check.
+7. **Only after these gates pass, prepare and send a paid-pilot offer.** Do not represent the project as production-ready or claim a customer conversion/revenue event before there is evidence.
 
-## Current status (evidence-based)
+## Current evidence-based status
+- Recovery code changes merged: **PASS**.
+- New post-merge Pages build and route smoke: **PENDING / not observed by connected tooling**.
+- Premium route deployed and browser-rendered: **NOT VERIFIED**.
+- Standard route deployed and browser-rendered: **NOT VERIFIED**.
+- Intended female avatar visual quality: **NOT VERIFIED**.
+- Arabic phoneme-level lip-sync in Premium: **NOT IMPLEMENTED/NOT CLAIMED**.
+- Commercial redistribution rights for legacy Standard/root GLB: **NOT VERIFIED**.
+- Real-phone QR flow: **NOT VERIFIED**.
+- First paid customer readiness: **NOT READY until the release gates above pass**.
 
-- Root Pages deployment / root Host automated smoke: **PASS** for the checks in run `37979717444`.
-- Intended female Premium avatar at its configured route: **NOT VERIFIED; likely blocked by missing asset path**.
-- Standard Host route asset path: **NOT VERIFIED; path mismatch identified**.
-- Female avatar rights/provenance: **NOT VERIFIED**.
-- Premium-grade visual quality on a real mobile device: **NOT VERIFIED**.
-- Arabic phoneme-level lip-sync: **NOT PROVEN**. A separate test for observed viseme events is not by itself proof of realistic phoneme-timed lip-sync in the Premium route.
-- End-to-end customer QR flow on a real phone: **NOT VERIFIED**.
-- First paid customer readiness: **NOT READY** until the target route, avatar, voice, contact actions, and QR flow are independently tested.
-
-## Recovery order
-
-1. Keep the existing QR destination unchanged. Do not replace or print a new QR based only on CI.
-2. Pick one canonical production route (the Premium route is the intended candidate); make its assets and dependencies explicit and version-pinned.
-3. Resolve the female avatar asset first: confirm file exists, successful browser load, skeleton/head presence, commercial redistribution rights, and acceptable visual quality. Do not silently substitute a male avatar.
-4. Fix route-relative assets for both Standard and Premium, or clearly mark one route as the only supported deployment target.
-5. Add route-specific Playwright smoke tests that open `/host-standard/` and `/host-premium/` directly, assert avatar loaded and rendered, verify no console/page errors, test Arabic answer + voice, and test all contact links.
-6. Validate animation separately: idle/head/eye movement, gestures, and speech-linked mouth motion. Report simple playback-state mouth movement separately from phoneme-timed lip-sync.
-7. Test the chosen route on a real phone, then test the QR destination from camera scan.
-8. Only after these checks, offer the customer package. The baseline may use deterministic verified answers and browser speech; a paid LLM is not a prerequisite.
-
-## Explicit exclusions
-
-- No new paid subscriptions or API spend.
-- No change to the existing QR destination until the replacement is live and real-phone verified.
-- No claims of working Premium/Standard routes based on root-route CI alone.
-- No claim of true Arabic lip-sync without route-specific evidence.
+## Customer communication rule
+Do not send a paid-pilot offer that claims the product is ready until the route, avatar, voice, contact actions, and real-phone QR flow are verified. When ready, offer a bounded paid pilot by email with a precise scope, delivery conditions, and no unsupported claims about voice quality or live business data.
